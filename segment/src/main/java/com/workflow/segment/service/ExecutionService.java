@@ -57,6 +57,21 @@ public class ExecutionService {
     }
 
     @Transactional(readOnly = true)
+    public List<ExecutionHistoryResponse> listAllExecutions() {
+        return executionRepository.findAllByOrderByStartedAtDesc().stream()
+                .map(e -> {
+                    List<NodeExecutionResult> results = e.getNodeResults();
+                    int total = results.size();
+                    int passed = (int) results.stream().filter(r -> r.getStatus() == ExecutionStatus.SUCCESS).count();
+                    int failed = (int) results.stream().filter(r -> r.getStatus() == ExecutionStatus.FAILED).count();
+                    return new ExecutionHistoryResponse(
+                            e.getId(), e.getWorkflow().getId(), e.getWorkflow().getName(),
+                            e.getStatus(), e.getStartedAt(), e.getCompletedAt(),
+                            total, passed, failed);
+                }).toList();
+    }
+
+    @Transactional(readOnly = true)
     public ExecutionDetailResponse getExecution(UUID execId) {
         WorkflowExecution exec = executionRepository.findById(execId)
                 .orElseThrow(() -> new RuntimeException("Execution not found: " + execId));
