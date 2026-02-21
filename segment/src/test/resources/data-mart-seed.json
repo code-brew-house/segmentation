@@ -1,0 +1,42 @@
+{
+  "data_marts": [
+    {
+      "table_name": "customers",
+      "schema_name": "public",
+      "description": "Customer master data with demographics and contact information",
+      "columns": [
+        {"column_name": "customer_id", "data_type": "INTEGER", "description": "Unique customer identifier"},
+        {"column_name": "name", "data_type": "VARCHAR(255)", "description": "Full name"},
+        {"column_name": "email", "data_type": "VARCHAR(255)", "description": "Email address"},
+        {"column_name": "city", "data_type": "VARCHAR(100)", "description": "City of residence"},
+        {"column_name": "age", "data_type": "INTEGER", "description": "Age in years"},
+        {"column_name": "created_at", "data_type": "TIMESTAMP", "description": "Account creation date"}
+      ]
+    },
+    {
+      "table_name": "purchases",
+      "schema_name": "public",
+      "description": "Purchase transaction history",
+      "columns": [
+        {"column_name": "purchase_id", "data_type": "INTEGER", "description": "Unique purchase identifier"},
+        {"column_name": "customer_id", "data_type": "INTEGER", "description": "Foreign key to customers table"},
+        {"column_name": "product_name", "data_type": "VARCHAR(255)", "description": "Name of purchased product"},
+        {"column_name": "amount", "data_type": "DECIMAL(10,2)", "description": "Purchase amount"},
+        {"column_name": "purchase_date", "data_type": "DATE", "description": "Date of purchase"},
+        {"column_name": "category", "data_type": "VARCHAR(100)", "description": "Product category"}
+      ]
+    },
+    {
+      "table_name": "demographics",
+      "schema_name": "public",
+      "description": "Extended demographic data for customer enrichment",
+      "columns": [
+        {"column_name": "customer_id", "data_type": "INTEGER", "description": "Foreign key to customers table"},
+        {"column_name": "income_bracket", "data_type": "VARCHAR(50)", "description": "Income range bracket"},
+        {"column_name": "education_level", "data_type": "VARCHAR(50)", "description": "Highest education level"},
+        {"column_name": "occupation", "data_type": "VARCHAR(100)", "description": "Current occupation"},
+        {"column_name": "marital_status", "data_type": "VARCHAR(20)", "description": "Marital status"}
+      ]
+    }
+  ]
+}
