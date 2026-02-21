@@ -11,6 +11,8 @@ import type {
   PreviewResponse,
 } from './types';
 
+import { showToast } from '@/components/ui/toast-notifications';
+
 export type {
   DataMart,
   DataMartDetail,
@@ -33,7 +35,15 @@ async function fetchApi<T>(path: string, options?: RequestInit): Promise<T> {
   });
   if (!res.ok) {
     const text = await res.text().catch(() => '');
-    throw new Error(`API error ${res.status}: ${text}`);
+    let errorMessage = `API error ${res.status}`;
+    try {
+      const parsed = JSON.parse(text);
+      if (parsed.error) errorMessage = parsed.error;
+    } catch {
+      if (text) errorMessage += `: ${text}`;
+    }
+    showToast(errorMessage, 'error');
+    throw new Error(errorMessage);
   }
   if (res.status === 204) return undefined as T;
   return res.json();

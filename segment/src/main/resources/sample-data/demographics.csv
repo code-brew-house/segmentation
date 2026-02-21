@@ -1,0 +1,51 @@
+customer_id,income_bracket,education_level,occupation,marital_status
+1,75k-100k,Bachelor's,Software Engineer,Married
+2,50k-75k,Bachelor's,Marketing Analyst,Single
+3,100k-150k,Master's,Project Manager,Married
+4,50k-75k,Bachelor's,Sales Representative,Single
+5,35k-50k,Associate's,Graphic Designer,Single
+6,150k+,Doctorate,Physician,Married
+7,75k-100k,Master's,HR Manager,Married
+8,100k-150k,Bachelor's,Financial Advisor,Divorced
+9,75k-100k,Bachelor's,Account Manager,Married
+10,50k-75k,Bachelor's,Web Developer,Single
+11,75k-100k,Master's,Data Analyst,Single
+12,100k-150k,High School,Contractor,Married
+13,25k-35k,Associate's,Retail Associate,Single
+14,75k-100k,Bachelor's,Operations Manager,Married
+15,100k-150k,Master's,Architect,Married
+16,50k-75k,Bachelor's,IT Support,Single
+17,75k-100k,Bachelor's,UX Designer,Single
+18,100k-150k,Master's,Engineering Manager,Married
+19,75k-100k,Bachelor's,Product Manager,Divorced
+20,50k-75k,Associate's,Hair Stylist,Single
+21,150k+,Master's,VP of Sales,Married
+22,75k-100k,Bachelor's,Environmental Scientist,Single
+23,35k-50k,Bachelor's,Customer Service Rep,Single
+24,100k-150k,Master's,Professor,Married
+25,50k-75k,Bachelor's,Nurse,Married
+26,75k-100k,Bachelor's,Personal Trainer,Divorced
+27,25k-35k,Associate's,Barista,Single
+28,150k+,Doctorate,Research Scientist,Married
+29,50k-75k,Bachelor's,Teacher,Married
+30,75k-100k,Bachelor's,Electrician,Single
+31,35k-50k,Associate's,Yoga Instructor,Single
+32,100k-150k,Master's,Supply Chain Manager,Married
+33,50k-75k,Bachelor's,Dental Hygienist,Married
+34,75k-100k,Master's,Business Analyst,Divorced
+35,50k-75k,Bachelor's,Social Worker,Single
+36,100k-150k,Bachelor's,Pilot,Married
+37,35k-50k,Bachelor's,Junior Developer,Single
+38,150k+,Master's,Chief Engineer,Married
+39,75k-100k,Bachelor's,Insurance Agent,Married
+40,50k-75k,Associate's,Bartender,Single
+41,100k-150k,Master's,Art Director,Divorced
+42,75k-100k,Bachelor's,Logistics Coordinator,Married
+43,50k-75k,Bachelor's,Veterinary Tech,Single
+44,100k-150k,Master's,Music Director,Married
+45,25k-35k,High School,Cashier,Single
+46,75k-100k,Bachelor's,Park Ranger,Married
+47,50k-75k,Associate's,Pharmacy Tech,Divorced
+48,75k-100k,Bachelor's,Plumber,Married
+49,35k-50k,Bachelor's,Receptionist,Single
+50,150k+,Doctorate,Surgeon,Married

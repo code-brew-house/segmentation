@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 import java.util.ArrayList;
@@ -16,6 +17,7 @@ import java.util.ArrayList;
 @Component
 @RequiredArgsConstructor
 @Slf4j
+@Order(1)
 public class DataMartSeeder implements CommandLineRunner {
     private final DataMartRepository dataMartRepository;
     private final ObjectMapper objectMapper;

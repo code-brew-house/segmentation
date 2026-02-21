@@ -1,0 +1,101 @@
+purchase_id,customer_id,product_name,amount,purchase_date,category
+1,1,Wireless Headphones,79.99,2023-03-15,Electronics
+2,1,Running Shoes,129.95,2023-06-20,Sports
+3,2,Laptop Stand,45.00,2023-04-10,Office
+4,3,Yoga Mat,35.99,2023-05-01,Sports
+5,3,Protein Powder,54.99,2023-07-15,Health
+6,3,Water Bottle,22.50,2023-09-03,Sports
+7,4,Bluetooth Speaker,89.99,2023-03-28,Electronics
+8,5,Skincare Set,67.50,2023-06-12,Beauty
+9,5,Sunscreen SPF50,18.99,2023-08-01,Beauty
+10,6,Reading Glasses,42.00,2023-04-22,Health
+11,7,Cookware Set,199.99,2023-07-10,Home
+12,7,Kitchen Scale,29.95,2023-09-25,Home
+13,8,Tennis Racket,159.00,2023-05-18,Sports
+14,9,Desk Lamp,55.00,2023-08-14,Office
+15,9,Notebook Set,15.99,2023-10-02,Office
+16,10,Gaming Mouse,69.99,2023-06-30,Electronics
+17,11,Plant Pot Set,34.50,2023-09-08,Home
+18,12,Fishing Rod,125.00,2023-07-22,Sports
+19,13,Makeup Palette,48.00,2023-10-15,Beauty
+20,13,Lip Gloss Set,24.99,2023-12-01,Beauty
+21,14,Power Bank,39.99,2023-09-05,Electronics
+22,15,Scented Candles,28.50,2023-11-10,Home
+23,15,Throw Blanket,45.00,2024-01-15,Home
+24,16,Fitness Tracker,149.99,2023-10-20,Electronics
+25,17,Coffee Grinder,75.00,2023-12-05,Home
+26,17,Travel Mug,19.95,2024-02-10,Home
+27,18,Garden Tools,88.00,2023-11-18,Home
+28,19,Backpack,65.00,2024-01-08,Sports
+29,19,Camping Lantern,32.99,2024-03-15,Sports
+30,20,Hair Dryer,59.95,2023-12-22,Beauty
+31,21,Blood Pressure Monitor,49.99,2024-02-01,Health
+32,22,Rain Jacket,110.00,2024-01-25,Sports
+33,23,Slot Car Set,85.00,2024-03-10,Toys
+34,24,Vinyl Record Player,179.99,2024-02-14,Electronics
+35,25,Perfume,92.00,2024-04-05,Beauty
+36,26,Resistance Bands,21.99,2024-03-20,Sports
+37,26,Foam Roller,28.50,2024-05-10,Sports
+38,27,Art Supply Kit,56.00,2024-05-01,Hobby
+39,28,Telescope,249.99,2024-04-15,Hobby
+40,29,Puzzle Set,18.99,2024-06-10,Toys
+41,30,Espresso Machine,299.99,2024-05-22,Home
+42,31,Yoga Blocks,16.50,2024-07-01,Sports
+43,31,Meditation Cushion,42.00,2024-08-15,Health
+44,32,Electric Drill,89.99,2024-06-18,Tools
+45,33,Sunglasses,135.00,2024-08-01,Fashion
+46,34,Running Watch,199.95,2024-07-12,Electronics
+47,34,Hydration Pack,45.00,2024-09-01,Sports
+48,35,Portable Charger,29.99,2024-09-10,Electronics
+49,36,Hiking Boots,165.00,2024-08-20,Sports
+50,37,Face Serum,38.00,2024-10-05,Beauty
+51,38,Walking Cane,55.00,2024-09-15,Health
+52,39,Beach Towel,24.99,2024-11-01,Home
+53,40,Skateboard,79.99,2024-10-18,Sports
+54,40,Helmet,42.50,2024-12-01,Sports
+55,41,Oil Paint Set,68.00,2024-12-10,Hobby
+56,42,Snow Boots,98.00,2024-11-15,Fashion
+57,43,Board Game,39.99,2025-01-05,Toys
+58,43,Card Game,14.99,2025-01-20,Toys
+59,44,Jazz Album Collection,45.00,2024-12-25,Entertainment
+60,45,Face Mask Set,22.00,2025-02-10,Beauty
+61,46,Binoculars,129.99,2025-01-15,Hobby
+62,47,Essential Oils,33.50,2025-03-01,Health
+63,48,Tool Box,75.00,2025-02-18,Tools
+64,49,Rollerblades,119.99,2025-04-01,Sports
+65,50,Book Collection,89.00,2025-03-15,Entertainment
+66,1,Smart Watch,249.99,2024-01-10,Electronics
+67,2,Standing Desk,450.00,2024-03-05,Office
+68,3,Dumbbell Set,125.00,2024-02-20,Sports
+69,5,Hair Straightener,79.95,2024-05-15,Beauty
+70,7,Instant Pot,89.99,2024-04-08,Home
+71,8,Golf Clubs,350.00,2024-06-01,Sports
+72,10,Mechanical Keyboard,149.99,2024-05-20,Electronics
+73,11,Indoor Planter,48.00,2024-08-10,Home
+74,12,Tackle Box,35.99,2024-07-05,Sports
+75,14,USB Hub,25.99,2024-09-18,Electronics
+76,16,Smart Scale,59.99,2024-10-12,Health
+77,18,Pruning Shears,22.00,2024-11-05,Home
+78,20,Curling Iron,44.95,2024-12-10,Beauty
+79,22,Ski Goggles,65.00,2025-01-02,Sports
+80,24,Turntable Needles,15.99,2025-02-08,Electronics
+81,25,Body Lotion,28.00,2025-03-01,Beauty
+82,27,Sketch Pad,12.99,2025-04-10,Hobby
+83,29,Jigsaw Puzzle,24.99,2025-05-01,Toys
+84,31,Resistance Loop,14.50,2025-06-01,Sports
+85,33,Aviator Sunglasses,89.00,2025-07-01,Fashion
+86,35,Solar Charger,49.99,2025-08-01,Electronics
+87,37,Moisturizer,32.00,2025-09-01,Beauty
+88,39,Picnic Blanket,29.99,2025-10-01,Home
+89,41,Watercolor Set,45.00,2025-11-01,Hobby
+90,43,Strategy Game,34.99,2025-12-01,Toys
+91,45,Nail Polish Set,18.99,2025-03-15,Beauty
+92,47,Diffuser,44.00,2025-04-20,Health
+93,49,Knee Pads,19.99,2025-05-15,Sports
+94,50,E-Reader,129.99,2025-06-10,Electronics
+95,2,Monitor Arm,89.00,2024-08-12,Office
+96,4,Portable Speaker,59.99,2024-07-18,Electronics
+97,6,Magnifying Glass,15.00,2024-09-02,Health
+98,9,Ergonomic Chair,399.00,2024-11-25,Office
+99,15,Aroma Diffuser,52.00,2025-04-08,Home
+100,20,Flat Iron,64.95,2025-05-20,Beauty
