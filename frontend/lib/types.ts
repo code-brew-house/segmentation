@@ -83,3 +83,31 @@ export interface PreviewResponse {
   nodeId: string;
   status: 'PENDING' | 'RUNNING' | 'SUCCESS' | 'FAILED';
 }
+
+export interface ExecutionHistoryItem {
+  executionId: string;
+  workflowId: string;
+  workflowName: string;
+  status: 'PENDING' | 'RUNNING' | 'SUCCESS' | 'FAILED';
+  startedAt: string;
+  completedAt: string | null;
+  totalNodes: number;
+  passedNodes: number;
+  failedNodes: number;
+}
+
+export interface SaveWorkflowRequest {
+  nodes: SaveNodeRequest[];
+}
+
+export interface SaveNodeRequest {
+  id: string | null;
+  type: string;
+  parentNodeIds: string[];
+  config: Record<string, unknown>;
+  position: number | null;
+}
+
+export interface SqlPreviewResponse {
+  sql: string;
+}

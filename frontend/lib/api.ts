@@ -9,6 +9,9 @@ import type {
   ExecutionResponse,
   ExecutionDetail,
   PreviewResponse,
+  ExecutionHistoryItem,
+  SaveWorkflowRequest,
+  SqlPreviewResponse,
 } from './types';
 
 import { showToast } from '@/components/ui/toast-notifications';
@@ -24,6 +27,9 @@ export type {
   ExecutionResponse,
   ExecutionDetail,
   PreviewResponse,
+  ExecutionHistoryItem,
+  SaveWorkflowRequest,
+  SqlPreviewResponse,
 };
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
@@ -84,4 +90,16 @@ export const api = {
   // Preview
   previewNode: (workflowId: string, nodeId: string) =>
     fetchApi<PreviewResponse>(`/workflows/${workflowId}/nodes/${nodeId}/preview`, { method: 'POST' }),
+
+  // Bulk save
+  saveWorkflow: (workflowId: string, data: SaveWorkflowRequest) =>
+    fetchApi<WorkflowDetail>(`/workflows/${workflowId}`, { method: 'PUT', body: JSON.stringify(data) }),
+
+  // Execution history (cross-workflow)
+  listAllExecutions: () =>
+    fetchApi<ExecutionHistoryItem[]>('/executions'),
+
+  // SQL Preview
+  sqlPreview: (workflowId: string, nodeId: string, data: { nodeType: string; config: Record<string, unknown> }) =>
+    fetchApi<SqlPreviewResponse>(`/workflows/${workflowId}/nodes/${nodeId}/sql-preview`, { method: 'POST', body: JSON.stringify(data) }),
 };
