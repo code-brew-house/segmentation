@@ -1,8 +1,69 @@
-export default function Home() {
+'use client';
+
+import { useState, useEffect } from 'react';
+import { api } from '@/lib/api';
+import type { Workflow } from '@/lib/types';
+import { WorkflowCard } from '@/components/dashboard/workflow-card';
+import { CreateWorkflowDialog } from '@/components/dashboard/create-workflow-dialog';
+import { useRouter } from 'next/navigation';
+
+export default function DashboardPage() {
+  const [workflows, setWorkflows] = useState<Workflow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  const loadWorkflows = async () => {
+    try {
+      const data = await api.listWorkflows();
+      setWorkflows(data);
+    } catch (err) {
+      console.error('Failed to load workflows:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { loadWorkflows(); }, []);
+
+  const handleCreate = async (name: string, createdBy: string) => {
+    try {
+      const wf = await api.createWorkflow({ name, createdBy: createdBy || undefined });
+      router.push(`/workflow/${wf.id}`);
+    } catch (err) {
+      console.error('Failed to create workflow:', err);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await api.deleteWorkflow(id);
+      setWorkflows((prev) => prev.filter((w) => w.id !== id));
+    } catch (err) {
+      console.error('Failed to delete workflow:', err);
+    }
+  };
+
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold">Workflows</h1>
-      <p className="text-gray-500 mt-2">Loading...</p>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">Workflows</h1>
+        <CreateWorkflowDialog onCreate={handleCreate} />
+      </div>
+
+      {loading ? (
+        <p className="text-gray-500">Loading workflows...</p>
+      ) : workflows.length === 0 ? (
+        <div className="text-center py-16">
+          <p className="text-gray-500 text-lg">No workflows yet</p>
+          <p className="text-gray-400 mt-1">Create your first workflow to get started</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {workflows.map((wf) => (
+            <WorkflowCard key={wf.id} workflow={wf} onDelete={handleDelete} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
