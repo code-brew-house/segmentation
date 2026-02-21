@@ -27,16 +27,18 @@ public class DataMartSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        if (dataMartRepository.count() > 0) {
-            log.info("Data marts already seeded, skipping");
-            return;
-        }
         JsonNode root = objectMapper.readTree(seedFile.getInputStream());
         JsonNode dataMarts = root.get("data_marts");
         for (JsonNode dmNode : dataMarts) {
+            String tableName = dmNode.get("table_name").asText();
+            String schemaName = dmNode.get("schema_name").asText();
+            if (dataMartRepository.existsByTableNameAndSchemaName(tableName, schemaName)) {
+                log.info("Data mart already exists, skipping: {}.{}", schemaName, tableName);
+                continue;
+            }
             DataMart dm = new DataMart();
-            dm.setTableName(dmNode.get("table_name").asText());
-            dm.setSchemaName(dmNode.get("schema_name").asText());
+            dm.setTableName(tableName);
+            dm.setSchemaName(schemaName);
             dm.setDescription(dmNode.get("description").asText());
             var columns = new ArrayList<DataMartColumn>();
             JsonNode colNodes = dmNode.get("columns");
@@ -52,7 +54,7 @@ public class DataMartSeeder implements CommandLineRunner {
             }
             dm.setColumns(columns);
             dataMartRepository.save(dm);
-            log.info("Seeded data mart: {}", dm.getTableName());
+            log.info("Seeded data mart: {}.{}", schemaName, tableName);
         }
     }
 }

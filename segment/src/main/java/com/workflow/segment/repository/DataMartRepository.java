@@ -7,4 +7,5 @@ import java.util.UUID;
 
 public interface DataMartRepository extends JpaRepository<DataMart, UUID> {
     Optional<DataMart> findByTableName(String tableName);
+    boolean existsByTableNameAndSchemaName(String tableName, String schemaName);
 }

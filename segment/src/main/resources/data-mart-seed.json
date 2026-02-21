@@ -37,6 +37,201 @@
         {"column_name": "occupation", "data_type": "VARCHAR(100)", "description": "Current occupation"},
         {"column_name": "marital_status", "data_type": "VARCHAR(20)", "description": "Marital status"}
       ]
+    },
+    {
+      "table_name": "accounts",
+      "schema_name": "banking",
+      "description": "Bank account master data including checking, savings, and money market accounts",
+      "columns": [
+        {"column_name": "account_id", "data_type": "BIGINT", "description": "Unique account identifier"},
+        {"column_name": "customer_id", "data_type": "INTEGER", "description": "Foreign key to customers table"},
+        {"column_name": "account_number", "data_type": "VARCHAR(20)", "description": "Masked account number"},
+        {"column_name": "account_type", "data_type": "VARCHAR(50)", "description": "Type of account (CHECKING, SAVINGS, MONEY_MARKET)"},
+        {"column_name": "balance", "data_type": "DECIMAL(15,2)", "description": "Current account balance"},
+        {"column_name": "currency", "data_type": "CHAR(3)", "description": "ISO 4217 currency code"},
+        {"column_name": "status", "data_type": "VARCHAR(20)", "description": "Account status (ACTIVE, DORMANT, CLOSED)"},
+        {"column_name": "opened_date", "data_type": "DATE", "description": "Date account was opened"},
+        {"column_name": "branch_id", "data_type": "INTEGER", "description": "Foreign key to branch_offices table"}
+      ]
+    },
+    {
+      "table_name": "transactions",
+      "schema_name": "banking",
+      "description": "All banking transactions including debits, credits, wire transfers, and ACH",
+      "columns": [
+        {"column_name": "transaction_id", "data_type": "BIGINT", "description": "Unique transaction identifier"},
+        {"column_name": "account_id", "data_type": "BIGINT", "description": "Foreign key to accounts table"},
+        {"column_name": "transaction_type", "data_type": "VARCHAR(50)", "description": "Type (DEBIT, CREDIT, WIRE, ACH, ATM)"},
+        {"column_name": "amount", "data_type": "DECIMAL(15,2)", "description": "Transaction amount"},
+        {"column_name": "currency", "data_type": "CHAR(3)", "description": "ISO 4217 currency code"},
+        {"column_name": "transaction_date", "data_type": "TIMESTAMP", "description": "Date and time of transaction"},
+        {"column_name": "description", "data_type": "VARCHAR(500)", "description": "Transaction description or memo"},
+        {"column_name": "merchant_name", "data_type": "VARCHAR(255)", "description": "Merchant or counterparty name"},
+        {"column_name": "channel", "data_type": "VARCHAR(50)", "description": "Transaction channel (ONLINE, ATM, BRANCH, MOBILE)"},
+        {"column_name": "status", "data_type": "VARCHAR(20)", "description": "Status (PENDING, SETTLED, REVERSED, FAILED)"},
+        {"column_name": "reference_number", "data_type": "VARCHAR(100)", "description": "External reference or confirmation number"}
+      ]
+    },
+    {
+      "table_name": "loans",
+      "schema_name": "banking",
+      "description": "Loan product data including personal, auto, and student loans",
+      "columns": [
+        {"column_name": "loan_id", "data_type": "BIGINT", "description": "Unique loan identifier"},
+        {"column_name": "customer_id", "data_type": "INTEGER", "description": "Foreign key to customers table"},
+        {"column_name": "loan_type", "data_type": "VARCHAR(50)", "description": "Loan type (PERSONAL, AUTO, STUDENT, HOME_EQUITY)"},
+        {"column_name": "principal_amount", "data_type": "DECIMAL(15,2)", "description": "Original loan principal"},
+        {"column_name": "outstanding_balance", "data_type": "DECIMAL(15,2)", "description": "Remaining balance owed"},
+        {"column_name": "interest_rate", "data_type": "DECIMAL(5,4)", "description": "Annual interest rate as decimal"},
+        {"column_name": "term_months", "data_type": "INTEGER", "description": "Loan term in months"},
+        {"column_name": "monthly_payment", "data_type": "DECIMAL(10,2)", "description": "Required monthly payment"},
+        {"column_name": "origination_date", "data_type": "DATE", "description": "Date loan was originated"},
+        {"column_name": "maturity_date", "data_type": "DATE", "description": "Date loan matures"},
+        {"column_name": "status", "data_type": "VARCHAR(20)", "description": "Loan status (CURRENT, DELINQUENT, DEFAULT, PAID_OFF)"}
+      ]
+    },
+    {
+      "table_name": "credit_cards",
+      "schema_name": "banking",
+      "description": "Credit card account details, limits, and utilization data",
+      "columns": [
+        {"column_name": "card_id", "data_type": "BIGINT", "description": "Unique credit card account identifier"},
+        {"column_name": "customer_id", "data_type": "INTEGER", "description": "Foreign key to customers table"},
+        {"column_name": "card_number_masked", "data_type": "VARCHAR(20)", "description": "Last 4 digits of card number"},
+        {"column_name": "card_type", "data_type": "VARCHAR(50)", "description": "Card product type (REWARDS, CASHBACK, SECURED, PLATINUM)"},
+        {"column_name": "credit_limit", "data_type": "DECIMAL(10,2)", "description": "Total credit limit"},
+        {"column_name": "current_balance", "data_type": "DECIMAL(10,2)", "description": "Current outstanding balance"},
+        {"column_name": "available_credit", "data_type": "DECIMAL(10,2)", "description": "Available credit remaining"},
+        {"column_name": "apr", "data_type": "DECIMAL(5,4)", "description": "Annual percentage rate"},
+        {"column_name": "payment_due_date", "data_type": "DATE", "description": "Next payment due date"},
+        {"column_name": "minimum_payment", "data_type": "DECIMAL(10,2)", "description": "Minimum payment due"},
+        {"column_name": "rewards_points", "data_type": "INTEGER", "description": "Accumulated rewards points balance"},
+        {"column_name": "status", "data_type": "VARCHAR(20)", "description": "Card status (ACTIVE, SUSPENDED, CANCELLED)"}
+      ]
+    },
+    {
+      "table_name": "mortgages",
+      "schema_name": "banking",
+      "description": "Residential and commercial mortgage loan data",
+      "columns": [
+        {"column_name": "mortgage_id", "data_type": "BIGINT", "description": "Unique mortgage identifier"},
+        {"column_name": "customer_id", "data_type": "INTEGER", "description": "Foreign key to customers table"},
+        {"column_name": "property_address", "data_type": "VARCHAR(500)", "description": "Property street address"},
+        {"column_name": "property_type", "data_type": "VARCHAR(50)", "description": "Property type (SINGLE_FAMILY, CONDO, MULTI_FAMILY, COMMERCIAL)"},
+        {"column_name": "loan_amount", "data_type": "DECIMAL(15,2)", "description": "Original mortgage amount"},
+        {"column_name": "outstanding_balance", "data_type": "DECIMAL(15,2)", "description": "Current outstanding balance"},
+        {"column_name": "interest_rate", "data_type": "DECIMAL(5,4)", "description": "Mortgage interest rate"},
+        {"column_name": "rate_type", "data_type": "VARCHAR(10)", "description": "Rate type (FIXED, ARM)"},
+        {"column_name": "term_years", "data_type": "INTEGER", "description": "Mortgage term in years"},
+        {"column_name": "ltv_ratio", "data_type": "DECIMAL(5,4)", "description": "Loan-to-value ratio at origination"},
+        {"column_name": "origination_date", "data_type": "DATE", "description": "Date mortgage was originated"},
+        {"column_name": "escrow_balance", "data_type": "DECIMAL(10,2)", "description": "Current escrow account balance"},
+        {"column_name": "status", "data_type": "VARCHAR(20)", "description": "Mortgage status (CURRENT, DELINQUENT, IN_FORECLOSURE, PAID_OFF)"}
+      ]
+    },
+    {
+      "table_name": "fraud_alerts",
+      "schema_name": "banking",
+      "description": "Fraud detection events, alerts, and case management records",
+      "columns": [
+        {"column_name": "alert_id", "data_type": "BIGINT", "description": "Unique fraud alert identifier"},
+        {"column_name": "customer_id", "data_type": "INTEGER", "description": "Foreign key to customers table"},
+        {"column_name": "transaction_id", "data_type": "BIGINT", "description": "Associated transaction (nullable)"},
+        {"column_name": "alert_type", "data_type": "VARCHAR(100)", "description": "Type of fraud alert (UNUSUAL_LOCATION, LARGE_TRANSACTION, VELOCITY, CARD_NOT_PRESENT)"},
+        {"column_name": "severity", "data_type": "VARCHAR(20)", "description": "Alert severity (LOW, MEDIUM, HIGH, CRITICAL)"},
+        {"column_name": "alert_timestamp", "data_type": "TIMESTAMP", "description": "When the alert was generated"},
+        {"column_name": "fraud_score", "data_type": "DECIMAL(5,4)", "description": "ML model fraud probability score (0-1)"},
+        {"column_name": "status", "data_type": "VARCHAR(30)", "description": "Case status (OPEN, UNDER_REVIEW, CONFIRMED_FRAUD, FALSE_POSITIVE, CLOSED)"},
+        {"column_name": "resolved_at", "data_type": "TIMESTAMP", "description": "Timestamp when alert was resolved"},
+        {"column_name": "notes", "data_type": "TEXT", "description": "Analyst notes and resolution details"}
+      ]
+    },
+    {
+      "table_name": "risk_scores",
+      "schema_name": "banking",
+      "description": "Customer credit risk, behavioral risk, and compliance risk scores",
+      "columns": [
+        {"column_name": "score_id", "data_type": "BIGINT", "description": "Unique score record identifier"},
+        {"column_name": "customer_id", "data_type": "INTEGER", "description": "Foreign key to customers table"},
+        {"column_name": "credit_score", "data_type": "INTEGER", "description": "Credit bureau score (300-850)"},
+        {"column_name": "internal_risk_rating", "data_type": "VARCHAR(10)", "description": "Internal rating (AAA, AA, A, BBB, BB, B, CCC)"},
+        {"column_name": "probability_of_default", "data_type": "DECIMAL(5,4)", "description": "Model-estimated 12-month default probability"},
+        {"column_name": "debt_to_income_ratio", "data_type": "DECIMAL(5,4)", "description": "Total monthly debt payments divided by gross income"},
+        {"column_name": "kyc_status", "data_type": "VARCHAR(30)", "description": "Know Your Customer verification status"},
+        {"column_name": "aml_risk_level", "data_type": "VARCHAR(20)", "description": "Anti-money laundering risk level (LOW, MEDIUM, HIGH)"},
+        {"column_name": "score_date", "data_type": "DATE", "description": "Date scores were last calculated"},
+        {"column_name": "next_review_date", "data_type": "DATE", "description": "Scheduled date for next risk review"}
+      ]
+    },
+    {
+      "table_name": "investments",
+      "schema_name": "banking",
+      "description": "Customer investment accounts, holdings, and portfolio performance",
+      "columns": [
+        {"column_name": "investment_id", "data_type": "BIGINT", "description": "Unique investment account identifier"},
+        {"column_name": "customer_id", "data_type": "INTEGER", "description": "Foreign key to customers table"},
+        {"column_name": "account_type", "data_type": "VARCHAR(50)", "description": "Account type (BROKERAGE, IRA, ROTH_IRA, 401K, 529)"},
+        {"column_name": "ticker_symbol", "data_type": "VARCHAR(10)", "description": "Security ticker symbol"},
+        {"column_name": "asset_class", "data_type": "VARCHAR(50)", "description": "Asset class (EQUITY, BOND, ETF, MUTUAL_FUND, CD)"},
+        {"column_name": "quantity", "data_type": "DECIMAL(15,6)", "description": "Number of units or shares held"},
+        {"column_name": "cost_basis", "data_type": "DECIMAL(15,2)", "description": "Total cost basis of position"},
+        {"column_name": "market_value", "data_type": "DECIMAL(15,2)", "description": "Current market value of position"},
+        {"column_name": "unrealized_gain_loss", "data_type": "DECIMAL(15,2)", "description": "Unrealized gain or loss on position"},
+        {"column_name": "risk_profile", "data_type": "VARCHAR(30)", "description": "Customer risk profile (CONSERVATIVE, MODERATE, AGGRESSIVE)"},
+        {"column_name": "as_of_date", "data_type": "DATE", "description": "Date of portfolio valuation"}
+      ]
+    },
+    {
+      "table_name": "branch_offices",
+      "schema_name": "banking",
+      "description": "Physical bank branch locations, hours, and capacity data",
+      "columns": [
+        {"column_name": "branch_id", "data_type": "INTEGER", "description": "Unique branch identifier"},
+        {"column_name": "branch_name", "data_type": "VARCHAR(255)", "description": "Branch name"},
+        {"column_name": "branch_type", "data_type": "VARCHAR(50)", "description": "Branch type (FULL_SERVICE, LIMITED_SERVICE, DRIVE_THROUGH, FLAGSHIP)"},
+        {"column_name": "address", "data_type": "VARCHAR(500)", "description": "Full street address"},
+        {"column_name": "city", "data_type": "VARCHAR(100)", "description": "City"},
+        {"column_name": "state", "data_type": "CHAR(2)", "description": "State abbreviation"},
+        {"column_name": "zip_code", "data_type": "VARCHAR(10)", "description": "ZIP code"},
+        {"column_name": "phone", "data_type": "VARCHAR(20)", "description": "Branch phone number"},
+        {"column_name": "manager_id", "data_type": "INTEGER", "description": "Employee ID of branch manager"},
+        {"column_name": "atm_count", "data_type": "INTEGER", "description": "Number of ATMs at location"},
+        {"column_name": "opened_date", "data_type": "DATE", "description": "Date branch opened"},
+        {"column_name": "status", "data_type": "VARCHAR(20)", "description": "Branch status (ACTIVE, TEMPORARILY_CLOSED, PERMANENTLY_CLOSED)"}
+      ]
+    },
+    {
+      "table_name": "kyc_documents",
+      "schema_name": "banking",
+      "description": "Know Your Customer identity verification documents and compliance records",
+      "columns": [
+        {"column_name": "document_id", "data_type": "BIGINT", "description": "Unique document record identifier"},
+        {"column_name": "customer_id", "data_type": "INTEGER", "description": "Foreign key to customers table"},
+        {"column_name": "document_type", "data_type": "VARCHAR(100)", "description": "Document type (PASSPORT, DRIVERS_LICENSE, UTILITY_BILL, TAX_RETURN)"},
+        {"column_name": "document_number", "data_type": "VARCHAR(100)", "description": "Masked document identification number"},
+        {"column_name": "issuing_country", "data_type": "CHAR(3)", "description": "ISO 3166 country code of issuing authority"},
+        {"column_name": "issue_date", "data_type": "DATE", "description": "Date document was issued"},
+        {"column_name": "expiry_date", "data_type": "DATE", "description": "Document expiration date"},
+        {"column_name": "verification_status", "data_type": "VARCHAR(30)", "description": "Verification status (PENDING, VERIFIED, REJECTED, EXPIRED)"},
+        {"column_name": "verified_at", "data_type": "TIMESTAMP", "description": "Timestamp of successful verification"},
+        {"column_name": "verified_by", "data_type": "INTEGER", "description": "Employee ID who performed verification"}
+      ]
+    },
+    {
+      "table_name": "interest_rates",
+      "schema_name": "banking",
+      "description": "Historical and current interest rate schedules for all banking products",
+      "columns": [
+        {"column_name": "rate_id", "data_type": "BIGINT", "description": "Unique rate record identifier"},
+        {"column_name": "product_type", "data_type": "VARCHAR(50)", "description": "Product type (SAVINGS, CD, MORTGAGE_30Y, MORTGAGE_15Y, AUTO_LOAN, PERSONAL_LOAN)"},
+        {"column_name": "term_months", "data_type": "INTEGER", "description": "Product term in months (null for variable products)"},
+        {"column_name": "rate", "data_type": "DECIMAL(6,4)", "description": "Annual interest rate as decimal"},
+        {"column_name": "apy", "data_type": "DECIMAL(6,4)", "description": "Annual percentage yield"},
+        {"column_name": "effective_date", "data_type": "DATE", "description": "Date rate became effective"},
+        {"column_name": "expiry_date", "data_type": "DATE", "description": "Date rate expired (null if current)"},
+        {"column_name": "min_balance", "data_type": "DECIMAL(10,2)", "description": "Minimum balance to qualify for rate"},
+        {"column_name": "tier", "data_type": "VARCHAR(20)", "description": "Rate tier (STANDARD, PREFERRED, PREMIER)"}
+      ]
     }
   ]
 }
