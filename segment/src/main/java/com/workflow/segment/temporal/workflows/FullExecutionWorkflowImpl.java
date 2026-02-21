@@ -28,8 +28,9 @@ public class FullExecutionWorkflowImpl implements FullExecutionWorkflow {
     @Override
     public FullExecutionResult execute(FullExecutionInput input) {
         List<GraphNode> graph = input.getGraph();
-        String wfId = input.getWorkflowId();
-        String execId = input.getExecutionId();
+        // Use first 8 chars of each UUID to keep table names within PostgreSQL's 63-char limit
+        String wfId = input.getWorkflowId().replace("-", "").substring(0, 8);
+        String execId = input.getExecutionId().replace("-", "").substring(0, 8);
 
         // Build lookup maps
         Map<String, GraphNode> nodeMap = graph.stream()
@@ -65,7 +66,12 @@ public class FullExecutionWorkflowImpl implements FullExecutionWorkflow {
 
         // Determine overall status
         boolean anyFailed = allResults.stream().anyMatch(r -> "FAILED".equals(r.getStatus()));
-        return new FullExecutionResult(anyFailed ? "FAILED" : "COMPLETED", allResults);
+        String finalStatus = anyFailed ? "FAILED" : "SUCCESS";
+
+        // Persist all results and update execution status in the DB
+        activities.completeExecution(input.getExecutionId(), allResults, finalStatus);
+
+        return new FullExecutionResult(finalStatus, allResults);
     }
 
     private void executeNode(GraphNode node, Map<String, GraphNode> nodeMap,
@@ -92,8 +98,11 @@ public class FullExecutionWorkflowImpl implements FullExecutionWorkflow {
                         })
                         .toList();
 
+                // Use first parent's result table so downstream nodes (e.g. STOP) have a table to work with
+                Promise<NodeResult> firstParentPromise = parentPromises.get(0);
                 structuralPromise = Promise.allOf(parentPromises).thenApply(v -> {
-                    NodeResult nr = new NodeResult(node.getNodeId(), nodeType, null, 0, 0, 0, "SUCCESS", null);
+                    String resultTable = firstParentPromise.get().getResultTable();
+                    NodeResult nr = new NodeResult(node.getNodeId(), nodeType, resultTable, 0, 0, 0, "SUCCESS", null, null);
                     allResults.add(nr);
                     return nr;
                 });
@@ -106,13 +115,13 @@ public class FullExecutionWorkflowImpl implements FullExecutionWorkflow {
                     }
                     structuralPromise = promiseMap.get(parentId).thenApply(parentResult -> {
                         NodeResult nr = new NodeResult(node.getNodeId(), nodeType, parentResult.getResultTable(),
-                                0, 0, 0, "SUCCESS", null);
+                                0, 0, 0, "SUCCESS", null, null);
                         allResults.add(nr);
                         return nr;
                     });
                 } else {
                     structuralPromise = Async.function(() -> {
-                        NodeResult nr = new NodeResult(node.getNodeId(), nodeType, null, 0, 0, 0, "SUCCESS", null);
+                        NodeResult nr = new NodeResult(node.getNodeId(), nodeType, null, 0, 0, 0, "SUCCESS", null, null);
                         allResults.add(nr);
                         return nr;
                     });
@@ -155,7 +164,8 @@ public class FullExecutionWorkflowImpl implements FullExecutionWorkflow {
     @SuppressWarnings("unchecked")
     private NodeResult executeDataNode(GraphNode node, String sourceTable,
                                        String wfId, String execId, List<NodeResult> allResults) {
-        String targetTable = "wf_" + wfId + "_exec_" + execId + "_node_" + node.getNodeId() + "_result";
+        String nodeShort = node.getNodeId().replace("-", "").substring(0, 8);
+        String targetTable = "wf_" + wfId + "_e_" + execId + "_n_" + nodeShort + "_r";
         NodeResult result;
 
         try {
@@ -164,13 +174,13 @@ public class FullExecutionWorkflowImpl implements FullExecutionWorkflow {
                     String filePath = (String) node.getConfig().get("file_path");
                     var r = activities.fileUploadActivity(new FileUploadInput(filePath, targetTable, null));
                     yield new NodeResult(node.getNodeId(), node.getType(), r.getResultTable(),
-                            0, r.getRowCount(), 0, "SUCCESS", null);
+                            0, r.getRowCount(), 0, "SUCCESS", null, null);
                 }
                 case "START_QUERY" -> {
                     String rawSql = (String) node.getConfig().get("raw_sql");
                     var r = activities.startQueryActivity(new StartQueryInput(rawSql, targetTable));
                     yield new NodeResult(node.getNodeId(), node.getType(), r.getResultTable(),
-                            0, r.getRowCount(), 0, "SUCCESS", null);
+                            0, r.getRowCount(), 0, "SUCCESS", null, null);
                 }
                 case "FILTER" -> {
                     var config = node.getConfig();
@@ -179,7 +189,7 @@ public class FullExecutionWorkflowImpl implements FullExecutionWorkflow {
                             (String) config.get("data_mart_table"), (String) config.get("join_key"),
                             (String) config.get("mode"), (Map<String, Object>) config.get("conditions")));
                     yield new NodeResult(node.getNodeId(), node.getType(), r.getResultTable(),
-                            r.getInputCount(), r.getOutputCount(), r.getFilteredCount(), "SUCCESS", null);
+                            r.getInputCount(), r.getOutputCount(), r.getFilteredCount(), "SUCCESS", null, null);
                 }
                 case "ENRICH" -> {
                     var config = node.getConfig();
@@ -189,19 +199,20 @@ public class FullExecutionWorkflowImpl implements FullExecutionWorkflow {
                             (String) config.get("join_key"),
                             config.get("select_columns") != null ? (List<String>) config.get("select_columns") : null));
                     yield new NodeResult(node.getNodeId(), node.getType(), r.getResultTable(),
-                            r.getInputCount(), r.getOutputCount(), 0, "SUCCESS", null);
+                            r.getInputCount(), r.getOutputCount(), 0, "SUCCESS", null, null);
                 }
                 case "STOP" -> {
-                    String outputPath = (String) node.getConfig().getOrDefault("output_file_path",
-                            "./outputs/wf_" + wfId + "/exec_" + execId + "/stop_" + node.getNodeId() + ".csv");
+                    Object rawPath = node.getConfig() != null ? node.getConfig().get("output_file_path") : null;
+                    String outputPath = (rawPath instanceof String s && !s.isBlank()) ? s
+                            : "./outputs/wf_" + wfId + "/exec_" + execId + "/stop_" + nodeShort + ".csv";
                     var r = activities.stopNodeActivity(new StopNodeInput(sourceTable, outputPath));
                     yield new NodeResult(node.getNodeId(), node.getType(), null,
-                            r.getRowCount(), r.getRowCount(), 0, "SUCCESS", null);
+                            r.getRowCount(), r.getRowCount(), 0, "SUCCESS", null, r.getFilePath());
                 }
                 default -> throw new RuntimeException("Unknown node type: " + node.getType());
             };
         } catch (Exception e) {
-            result = new NodeResult(node.getNodeId(), node.getType(), null, 0, 0, 0, "FAILED", e.getMessage());
+            result = new NodeResult(node.getNodeId(), node.getType(), null, 0, 0, 0, "FAILED", e.getMessage(), null);
         }
 
         allResults.add(result);

@@ -4,6 +4,8 @@ import com.workflow.segment.temporal.model.*;
 import io.temporal.activity.ActivityInterface;
 import io.temporal.activity.ActivityMethod;
 
+import java.util.List;
+
 @ActivityInterface
 public interface SegmentActivities {
     @ActivityMethod
@@ -20,4 +22,8 @@ public interface SegmentActivities {
 
     @ActivityMethod
     StopNodeResult stopNodeActivity(StopNodeInput input);
+
+    /** Persist all node results and mark the execution as SUCCESS or FAILED in the DB. */
+    @ActivityMethod
+    void completeExecution(String executionId, List<NodeResult> nodeResults, String finalStatus);
 }

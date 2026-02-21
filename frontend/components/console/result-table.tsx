@@ -14,7 +14,7 @@ interface ResultTableProps {
 }
 
 export function ResultTable({ rows }: ResultTableProps) {
-  if (rows.length === 0) {
+  if (!rows || rows.length === 0) {
     return <p className="text-sm text-gray-500 p-4">No result data to display.</p>;
   }
 

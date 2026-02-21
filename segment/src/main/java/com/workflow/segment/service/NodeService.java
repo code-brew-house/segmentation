@@ -6,6 +6,7 @@ import com.workflow.segment.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -23,7 +24,7 @@ public class NodeService {
         node.setWorkflow(wf);
         node.setType(NodeType.valueOf(request.type()));
         node.setParentNodeIds(request.parentNodeIds() != null
-                ? request.parentNodeIds().stream().map(UUID::fromString).toList() : List.of());
+                ? new ArrayList<>(request.parentNodeIds().stream().map(UUID::fromString).toList()) : new ArrayList<>());
         node.setConfig(request.config());
         node.setPosition(request.position());
         node = nodeRepository.save(node);
@@ -35,7 +36,7 @@ public class NodeService {
         SegmentWorkflowNode node = nodeRepository.findById(nodeId)
                 .orElseThrow(() -> new NodeNotFoundException(nodeId));
         if (request.parentNodeIds() != null) {
-            node.setParentNodeIds(request.parentNodeIds().stream().map(UUID::fromString).toList());
+            node.setParentNodeIds(new ArrayList<>(request.parentNodeIds().stream().map(UUID::fromString).toList()));
         }
         if (request.config() != null) {
             node.setConfig(request.config());

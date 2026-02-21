@@ -178,14 +178,37 @@ export default function WorkflowEditorPage({ params }: { params: Promise<{ id: s
       addLog(`Previewing node ${nodeId.slice(0, 8)}...`);
       setIsPreviewing(true);
 
+      // Start async preview — returns { executionId }
       const preview = await api.previewNode(workflow.id, nodeId);
+      addLog(`Preview execution ${preview.executionId.slice(0, 8)} started, waiting for result...`);
+
+      // Poll until done (max 60s)
+      let detail = null;
+      for (let i = 0; i < 30; i++) {
+        await new Promise((r) => setTimeout(r, 2000));
+        detail = await api.getExecution(workflow.id, preview.executionId);
+        if (detail.status === 'SUCCESS' || detail.status === 'FAILED') break;
+      }
 
       setIsPreviewing(false);
+
+      if (!detail || detail.status !== 'SUCCESS') {
+        const errNode = detail?.nodeResults?.find((n) => n.status === 'FAILED');
+        addLog(`Preview failed: ${errNode?.errorMessage ?? 'Timed out or unknown error'}`, 'error');
+        return;
+      }
+
+      // Fetch sample rows from the node result
+      const nodeResult = detail.nodeResults.find((n) => n.nodeId === nodeId);
+      const rows = await api.getNodeResults(workflow.id, preview.executionId, nodeId);
+
       addLog(
-        `Preview complete: ${preview.inputCount} input, ${preview.filteredCount} filtered, ${preview.outputCount} output`,
+        `Preview complete: ${nodeResult?.inputRecordCount ?? 0} input, ${nodeResult?.filteredRecordCount ?? 0} filtered, ${nodeResult?.outputRecordCount ?? 0} output`,
         'success',
       );
-      setResultRows(preview.sampleRows);
+      setResultRows(rows ?? []);
+      setNodeResults(detail.nodeResults);
+      currentExecRef.current = { workflowId: workflow.id, execId: preview.executionId };
       setConsoleTab('results');
     } catch (err) {
       setIsPreviewing(false);

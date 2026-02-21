@@ -16,4 +16,5 @@ public class NodeResult {
     private int filteredCount;
     private String status; // "SUCCESS" or "FAILED"
     private String errorMessage;
+    private String outputFilePath;
 }

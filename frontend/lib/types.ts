@@ -78,9 +78,8 @@ export interface ExecutionDetail extends ExecutionResponse {
 }
 
 export interface PreviewResponse {
-  resultTable: string;
-  inputCount: number;
-  outputCount: number;
-  filteredCount: number;
-  sampleRows: Record<string, unknown>[];
+  executionId: string;
+  workflowId: string;
+  nodeId: string;
+  status: 'PENDING' | 'RUNNING' | 'SUCCESS' | 'FAILED';
 }

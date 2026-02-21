@@ -2,16 +2,23 @@ package com.workflow.segment.temporal.activities;
 
 import com.opencsv.CSVReader;
 import com.opencsv.CSVWriter;
+import com.workflow.segment.model.ExecutionStatus;
+import com.workflow.segment.model.NodeExecutionResult;
+import com.workflow.segment.model.WorkflowExecution;
+import com.workflow.segment.repository.NodeExecutionResultRepository;
+import com.workflow.segment.repository.WorkflowExecutionRepository;
 import com.workflow.segment.service.SqlConditionBuilder;
 import com.workflow.segment.temporal.model.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -21,6 +28,8 @@ import java.util.stream.Collectors;
 public class SegmentActivitiesImpl implements SegmentActivities {
 
     private final JdbcTemplate jdbcTemplate;
+    private final WorkflowExecutionRepository executionRepository;
+    private final NodeExecutionResultRepository nodeExecutionResultRepository;
 
     @Override
     public FileUploadResult fileUploadActivity(FileUploadInput input) {
@@ -86,14 +95,14 @@ public class SegmentActivitiesImpl implements SegmentActivities {
 
         if ("JOIN".equalsIgnoreCase(input.getMode())) {
             String sql = String.format(
-                    "CREATE TABLE %s AS SELECT src.* FROM %s src JOIN %s dm ON src.%s = dm.%s %s",
+                    "CREATE TABLE %s AS SELECT src.* FROM %s src JOIN %s dm ON src.%s::text = dm.%s::text %s",
                     target, source, dmTable, input.getJoinKey(), input.getJoinKey(),
                     whereClause);
             jdbcTemplate.execute(sql);
         } else {
             // SUBQUERY mode
             String sql = String.format(
-                    "CREATE TABLE %s AS SELECT * FROM %s WHERE %s IN (SELECT %s FROM %s %s)",
+                    "CREATE TABLE %s AS SELECT * FROM %s WHERE %s::text IN (SELECT %s::text FROM %s %s)",
                     target, source, input.getJoinKey(), input.getJoinKey(), dmTable, whereClause);
             jdbcTemplate.execute(sql);
         }
@@ -120,7 +129,7 @@ public class SegmentActivitiesImpl implements SegmentActivities {
                     ? input.getSelectColumns().stream().map(c -> "dm." + c).collect(Collectors.joining(", "))
                     : "dm.*";
             String sql = String.format(
-                    "CREATE TABLE %s AS SELECT src.*, %s FROM %s src LEFT JOIN %s dm ON src.%s = dm.%s",
+                    "CREATE TABLE %s AS SELECT src.*, %s FROM %s src LEFT JOIN %s dm ON src.%s::text = dm.%s::text",
                     target, dmCols, source, dmTable, input.getJoinKey(), input.getJoinKey());
             jdbcTemplate.execute(sql);
         } else {
@@ -146,7 +155,10 @@ public class SegmentActivitiesImpl implements SegmentActivities {
         // Ensure parent directories exist
         Path path = Path.of(outputPath);
         try {
-            Files.createDirectories(path.getParent());
+            Path parent = path.getParent();
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
         } catch (IOException e) {
             throw new RuntimeException("Cannot create output directory", e);
         }
@@ -177,6 +189,38 @@ public class SegmentActivitiesImpl implements SegmentActivities {
         }
 
         return new StopNodeResult(outputPath, rows.size());
+    }
+
+    @Override
+    @Transactional
+    public void completeExecution(String executionId, List<NodeResult> nodeResults, String finalStatus) {
+        UUID execId = UUID.fromString(executionId);
+        WorkflowExecution execution = executionRepository.findById(execId)
+                .orElseThrow(() -> new RuntimeException("Execution not found: " + executionId));
+
+        // Persist each node result
+        for (NodeResult nr : nodeResults) {
+            NodeExecutionResult entity = new NodeExecutionResult();
+            entity.setExecution(execution);
+            entity.setNodeId(UUID.fromString(nr.getNodeId()));
+            entity.setNodeType(com.workflow.segment.model.NodeType.valueOf(nr.getNodeType()));
+            entity.setStatus(ExecutionStatus.valueOf(nr.getStatus()));
+            entity.setInputRecordCount(nr.getInputCount());
+            entity.setFilteredRecordCount(nr.getFilteredCount());
+            entity.setOutputRecordCount(nr.getOutputCount());
+            entity.setResultTableName(nr.getResultTable());
+            entity.setOutputFilePath(nr.getOutputFilePath());
+            entity.setErrorMessage(nr.getErrorMessage());
+            entity.setStartedAt(Instant.now());
+            entity.setCompletedAt(Instant.now());
+            nodeExecutionResultRepository.save(entity);
+        }
+
+        // Update execution status
+        execution.setStatus(ExecutionStatus.valueOf(finalStatus));
+        execution.setCompletedAt(Instant.now());
+        executionRepository.save(execution);
+        log.info("Execution {} marked as {}", executionId, finalStatus);
     }
 
     private List<String> getColumns(String tableName) {
