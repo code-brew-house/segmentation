@@ -5,6 +5,7 @@ import { api } from '@/lib/api';
 import type { WorkflowDetail, NodeType } from '@/lib/types';
 import { WorkflowCanvas } from '@/components/canvas/workflow-canvas';
 import { NodePalette } from '@/components/canvas/node-palette';
+import { SidePanel } from '@/components/panel/side-panel';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Play } from 'lucide-react';
 import Link from 'next/link';
@@ -12,7 +13,7 @@ import Link from 'next/link';
 export default function WorkflowEditorPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [workflow, setWorkflow] = useState<WorkflowDetail | null>(null);
-  const [, setSelectedNodeId] = useState<string | null>(null);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadWorkflow = useCallback(async () => {
@@ -114,6 +115,19 @@ export default function WorkflowEditorPage({ params }: { params: Promise<{ id: s
             onReload={loadWorkflow}
           />
         </div>
+
+        {/* Side Panel */}
+        {selectedNodeId && workflow && (
+          <SidePanel
+            workflowId={workflow.id}
+            nodeId={selectedNodeId}
+            nodes={workflow.nodes}
+            onClose={() => setSelectedNodeId(null)}
+            onDelete={handleDeleteNode}
+            onReload={loadWorkflow}
+            onPreview={(nId) => { console.log('Preview:', nId); }}
+          />
+        )}
       </div>
     </div>
   );
