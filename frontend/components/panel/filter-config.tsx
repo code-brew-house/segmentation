@@ -11,6 +11,8 @@ import { ConditionBuilder } from './condition-builder';
 interface FilterConfigProps {
   config: Record<string, unknown>;
   onUpdate: (config: Record<string, unknown>) => void;
+  workflowId?: string;
+  nodeId?: string;
 }
 
 export function FilterConfig({ config, onUpdate }: FilterConfigProps) {

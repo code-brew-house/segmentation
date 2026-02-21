@@ -8,7 +8,6 @@ import { QueryConfig } from './query-config';
 import { FilterConfig } from './filter-config';
 import { EnrichConfig } from './enrich-config';
 import { StopConfig } from './stop-config';
-import { api } from '@/lib/api';
 
 interface SidePanelProps {
   workflowId: string;
@@ -16,21 +15,16 @@ interface SidePanelProps {
   nodes: NodeResponse[];
   onClose: () => void;
   onDelete: (nodeId: string) => void;
-  onReload: () => void;
+  onConfigUpdate: (nodeId: string, config: Record<string, unknown>) => void;
   onPreview: (nodeId: string) => void;
 }
 
-export function SidePanel({ workflowId, nodeId, nodes, onClose, onDelete, onReload, onPreview }: SidePanelProps) {
+export function SidePanel({ workflowId, nodeId, nodes, onClose, onDelete, onConfigUpdate, onPreview }: SidePanelProps) {
   const node = nodes.find((n) => n.id === nodeId);
   if (!node) return null;
 
-  const handleConfigUpdate = async (config: Record<string, unknown>) => {
-    try {
-      await api.updateNode(workflowId, nodeId, { config });
-      onReload();
-    } catch (err) {
-      console.error('Failed to update node:', err);
-    }
+  const handleConfigUpdate = (config: Record<string, unknown>) => {
+    onConfigUpdate(nodeId, config);
   };
 
   return (
@@ -57,13 +51,13 @@ export function SidePanel({ workflowId, nodeId, nodes, onClose, onDelete, onRelo
           <FileUploadConfig config={node.config} onUpdate={handleConfigUpdate} />
         )}
         {node.type === 'START_QUERY' && (
-          <QueryConfig config={node.config} onUpdate={handleConfigUpdate} />
+          <QueryConfig config={node.config} onUpdate={handleConfigUpdate} workflowId={workflowId} nodeId={nodeId} />
         )}
         {node.type === 'FILTER' && (
-          <FilterConfig config={node.config} onUpdate={handleConfigUpdate} />
+          <FilterConfig config={node.config} onUpdate={handleConfigUpdate} workflowId={workflowId} nodeId={nodeId} />
         )}
         {node.type === 'ENRICH' && (
-          <EnrichConfig config={node.config} onUpdate={handleConfigUpdate} />
+          <EnrichConfig config={node.config} onUpdate={handleConfigUpdate} workflowId={workflowId} nodeId={nodeId} />
         )}
         {node.type === 'STOP' && (
           <StopConfig config={node.config} onUpdate={handleConfigUpdate} />

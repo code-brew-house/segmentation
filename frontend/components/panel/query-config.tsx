@@ -7,6 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 interface QueryConfigProps {
   config: Record<string, unknown>;
   onUpdate: (config: Record<string, unknown>) => void;
+  workflowId?: string;
+  nodeId?: string;
 }
 
 export function QueryConfig({ config, onUpdate }: QueryConfigProps) {

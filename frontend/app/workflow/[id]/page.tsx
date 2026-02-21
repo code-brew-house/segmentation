@@ -2,18 +2,22 @@
 
 import { use, useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '@/lib/api';
-import type { WorkflowDetail, NodeType, ExecutionDetail, NodeExecutionResult } from '@/lib/types';
+import type { WorkflowDetail, NodeResponse, NodeType, ExecutionDetail, NodeExecutionResult } from '@/lib/types';
 import { WorkflowCanvas } from '@/components/canvas/workflow-canvas';
 import { NodePalette } from '@/components/canvas/node-palette';
 import { SidePanel } from '@/components/panel/side-panel';
 import { ExecutionConsole, type LogEntry, type ConsoleTab } from '@/components/console/execution-console';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Play, Loader2 } from 'lucide-react';
+import { ArrowLeft, Play, Loader2, Save } from 'lucide-react';
 import Link from 'next/link';
+import { showToast } from '@/components/ui/toast-notifications';
 
 export default function WorkflowEditorPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [workflow, setWorkflow] = useState<WorkflowDetail | null>(null);
+  const [localNodes, setLocalNodes] = useState<NodeResponse[]>([]);
+  const [isDirty, setIsDirty] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -39,6 +43,8 @@ export default function WorkflowEditorPage({ params }: { params: Promise<{ id: s
     try {
       const data = await api.getWorkflow(id);
       setWorkflow(data);
+      setLocalNodes(data.nodes);
+      setIsDirty(false);
     } catch (err) {
       console.error('Failed to load workflow:', err);
     } finally {
@@ -48,11 +54,18 @@ export default function WorkflowEditorPage({ params }: { params: Promise<{ id: s
 
   useEffect(() => { loadWorkflow(); }, [loadWorkflow]);
 
+  // Unsaved changes guard
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (isDirty) { e.preventDefault(); }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [isDirty]);
+
   // Cleanup polling on unmount
   useEffect(() => {
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
-    };
+    return () => { if (pollingRef.current) clearInterval(pollingRef.current); };
   }, []);
 
   const stopPolling = useCallback(() => {
@@ -109,47 +122,80 @@ export default function WorkflowEditorPage({ params }: { params: Promise<{ id: s
     }, 2000);
   }, [addLog, stopPolling]);
 
-  const handleAddNode = async (type: NodeType) => {
-    if (!workflow) return;
-    try {
-      await api.addNode(workflow.id, {
-        parentNodeIds: [],
-        type,
-        config: getDefaultConfig(type),
-      });
-      await loadWorkflow();
-    } catch (err) {
-      console.error('Failed to add node:', err);
-    }
+  // --- Local-first handlers ---
+
+  const handleAddNode = (type: NodeType) => {
+    const tempId = crypto.randomUUID();
+    const newNode: NodeResponse = {
+      id: tempId,
+      type,
+      parentNodeIds: [],
+      config: getDefaultConfig(type),
+      position: null,
+    };
+    setLocalNodes((prev) => [...prev, newNode]);
+    setIsDirty(true);
   };
 
-  const handleDeleteNode = async (nodeId: string) => {
-    if (!workflow) return;
-    try {
-      await api.deleteNode(workflow.id, nodeId);
-      setSelectedNodeId(null);
-      await loadWorkflow();
-    } catch (err) {
-      console.error('Failed to delete node:', err);
-    }
+  const handleDeleteNode = (nodeId: string) => {
+    setLocalNodes((prev) => {
+      const filtered = prev.filter((n) => n.id !== nodeId);
+      return filtered.map((n) => ({
+        ...n,
+        parentNodeIds: n.parentNodeIds.filter((pid) => pid !== nodeId),
+      }));
+    });
+    if (selectedNodeId === nodeId) setSelectedNodeId(null);
+    setIsDirty(true);
   };
 
-  const handleConnect = async (sourceId: string, targetId: string) => {
-    if (!workflow) return;
-    const targetNode = workflow.nodes.find((n) => n.id === targetId);
-    if (!targetNode) return;
+  const handleConnect = (sourceId: string, targetId: string) => {
+    setLocalNodes((prev) =>
+      prev.map((n) =>
+        n.id === targetId
+          ? { ...n, parentNodeIds: [...n.parentNodeIds, sourceId] }
+          : n
+      )
+    );
+    setIsDirty(true);
+  };
+
+  const handleConfigUpdate = (nodeId: string, config: Record<string, unknown>) => {
+    setLocalNodes((prev) =>
+      prev.map((n) => (n.id === nodeId ? { ...n, config } : n))
+    );
+    setIsDirty(true);
+  };
+
+  const handleSave = async () => {
+    if (!workflow || isSaving) return;
     try {
-      await api.updateNode(workflow.id, targetId, {
-        parentNodeIds: [...targetNode.parentNodeIds, sourceId],
+      setIsSaving(true);
+      const data = await api.saveWorkflow(workflow.id, {
+        nodes: localNodes.map((n) => ({
+          id: n.id,
+          type: n.type,
+          parentNodeIds: n.parentNodeIds,
+          config: n.config,
+          position: n.position,
+        })),
       });
-      await loadWorkflow();
+      setWorkflow(data);
+      setLocalNodes(data.nodes);
+      setIsDirty(false);
+      showToast('Workflow saved', 'success');
     } catch (err) {
-      console.error('Failed to connect nodes:', err);
+      console.error('Failed to save workflow:', err);
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleExecute = async () => {
     if (!workflow || isExecuting) return;
+    if (isDirty) {
+      await handleSave();
+    }
     try {
       stopPolling();
       setIsExecuting(true);
@@ -172,17 +218,18 @@ export default function WorkflowEditorPage({ params }: { params: Promise<{ id: s
 
   const handlePreview = async (nodeId: string) => {
     if (!workflow || isPreviewing || isExecuting) return;
+    if (isDirty) {
+      await handleSave();
+    }
     try {
       setConsoleOpen(true);
       setConsoleTab('log');
       addLog(`Previewing node ${nodeId.slice(0, 8)}...`);
       setIsPreviewing(true);
 
-      // Start async preview — returns { executionId }
       const preview = await api.previewNode(workflow.id, nodeId);
       addLog(`Preview execution ${preview.executionId.slice(0, 8)} started, waiting for result...`);
 
-      // Poll until done (max 60s)
       let detail = null;
       for (let i = 0; i < 30; i++) {
         await new Promise((r) => setTimeout(r, 2000));
@@ -198,7 +245,6 @@ export default function WorkflowEditorPage({ params }: { params: Promise<{ id: s
         return;
       }
 
-      // Fetch sample rows from the node result
       const nodeResult = detail.nodeResults.find((n) => n.nodeId === nodeId);
       const rows = await api.getNodeResults(workflow.id, preview.executionId, nodeId);
 
@@ -253,26 +299,34 @@ export default function WorkflowEditorPage({ params }: { params: Promise<{ id: s
             </Button>
           </Link>
           <h1 className="font-semibold">{workflow.name}</h1>
+          {isDirty && <span className="text-xs text-amber-500 font-medium">Unsaved changes</span>}
         </div>
-        <Button onClick={handleExecute} size="sm" disabled={isExecuting}>
-          {isExecuting ? (
-            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-          ) : (
-            <Play className="h-4 w-4 mr-1" />
-          )}
-          {isExecuting ? 'Executing...' : 'Execute All'}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={handleSave} size="sm" variant="outline" disabled={!isDirty || isSaving}>
+            {isSaving ? (
+              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4 mr-1" />
+            )}
+            {isSaving ? 'Saving...' : 'Save'}
+          </Button>
+          <Button onClick={handleExecute} size="sm" disabled={isExecuting}>
+            {isExecuting ? (
+              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+            ) : (
+              <Play className="h-4 w-4 mr-1" />
+            )}
+            {isExecuting ? 'Executing...' : 'Execute All'}
+          </Button>
+        </div>
       </div>
 
       {/* Canvas area */}
       <div className="flex flex-1 relative overflow-hidden">
-        {/* Node Palette */}
         <NodePalette onAddNode={handleAddNode} />
-
-        {/* React Flow Canvas */}
         <div className="flex-1">
           <WorkflowCanvas
-            nodes={workflow.nodes}
+            nodes={localNodes}
             onNodeSelect={setSelectedNodeId}
             onConnect={handleConnect}
             onDeleteNode={handleDeleteNode}
@@ -280,16 +334,14 @@ export default function WorkflowEditorPage({ params }: { params: Promise<{ id: s
             onReload={loadWorkflow}
           />
         </div>
-
-        {/* Side Panel */}
-        {selectedNodeId && workflow && (
+        {selectedNodeId && (
           <SidePanel
             workflowId={workflow.id}
             nodeId={selectedNodeId}
-            nodes={workflow.nodes}
+            nodes={localNodes}
             onClose={() => setSelectedNodeId(null)}
             onDelete={handleDeleteNode}
-            onReload={loadWorkflow}
+            onConfigUpdate={handleConfigUpdate}
             onPreview={handlePreview}
           />
         )}

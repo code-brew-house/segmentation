@@ -10,6 +10,8 @@ import { Button } from '@/components/ui/button';
 interface EnrichConfigProps {
   config: Record<string, unknown>;
   onUpdate: (config: Record<string, unknown>) => void;
+  workflowId?: string;
+  nodeId?: string;
 }
 
 export function EnrichConfig({ config, onUpdate }: EnrichConfigProps) {
