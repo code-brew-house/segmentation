@@ -36,6 +36,11 @@ public class WorkflowController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable UUID id) { workflowService.deleteWorkflow(id); }
 
+    @PutMapping("/{id}")
+    public WorkflowDetailResponse save(@PathVariable UUID id, @RequestBody SaveWorkflowRequest request) {
+        return workflowService.saveWorkflow(id, request);
+    }
+
     @GetMapping("/{id}/executions")
     public List<ExecutionResponse> listExecutions(@PathVariable UUID id) {
         return executionService.listExecutions(id);
