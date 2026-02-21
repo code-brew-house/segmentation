@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
-import type { DataMart } from '@/lib/types';
+import type { DataMart, DataMartColumn } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { SqlPreviewDialog } from './sql-preview-dialog';
 
 interface EnrichConfigProps {
   config: Record<string, unknown>;
@@ -14,7 +15,7 @@ interface EnrichConfigProps {
   nodeId?: string;
 }
 
-export function EnrichConfig({ config, onUpdate }: EnrichConfigProps) {
+export function EnrichConfig({ config, onUpdate, workflowId, nodeId }: EnrichConfigProps) {
   const [dataMarts, setDataMarts] = useState<DataMart[]>([]);
   const [selectedTable, setSelectedTable] = useState(String(config.data_mart_table || ''));
   const [mode, setMode] = useState(String(config.mode || 'ADD_COLUMNS'));
@@ -22,7 +23,8 @@ export function EnrichConfig({ config, onUpdate }: EnrichConfigProps) {
   const [selectColumns, setSelectColumns] = useState<string[]>(
     (config.select_columns as string[]) || []
   );
-  const [availableColumns, setAvailableColumns] = useState<string[]>([]);
+  const [availableColumns, setAvailableColumns] = useState<{ columnName: string; dataType: string }[]>([]);
+  const [showSqlPreview, setShowSqlPreview] = useState(false);
 
   useEffect(() => {
     api.listDataMarts().then(setDataMarts).catch(console.error);
@@ -33,20 +35,24 @@ export function EnrichConfig({ config, onUpdate }: EnrichConfigProps) {
       const dm = dataMarts.find((d) => d.tableName === selectedTable);
       if (dm) {
         api.getDataMart(dm.id).then((detail) => {
-          setAvailableColumns(detail.columns.map((c) => c.columnName));
+          setAvailableColumns(detail.columns.map((c: DataMartColumn) => ({ columnName: c.columnName, dataType: c.dataType })));
         }).catch(console.error);
       }
+    } else {
+      setAvailableColumns([]);
     }
   }, [selectedTable, dataMarts]);
 
+  const currentConfig = {
+    ...config,
+    data_mart_table: selectedTable,
+    mode,
+    join_key: joinKey,
+    select_columns: selectColumns,
+  };
+
   const handleSave = () => {
-    onUpdate({
-      ...config,
-      data_mart_table: selectedTable,
-      mode,
-      join_key: joinKey,
-      select_columns: selectColumns,
-    });
+    onUpdate(currentConfig);
   };
 
   const toggleColumn = (col: string) => {
@@ -89,14 +95,15 @@ export function EnrichConfig({ config, onUpdate }: EnrichConfigProps) {
             <Label>Columns to Add</Label>
             <div className="space-y-1 mt-1 max-h-40 overflow-y-auto">
               {availableColumns.map((col) => (
-                <label key={col} className="flex items-center gap-2 text-sm cursor-pointer">
+                <label key={col.columnName} className="flex items-center gap-2 text-sm cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={selectColumns.includes(col)}
-                    onChange={() => toggleColumn(col)}
+                    checked={selectColumns.includes(col.columnName)}
+                    onChange={() => toggleColumn(col.columnName)}
                     className="rounded"
                   />
-                  <span className="font-mono text-xs">{col}</span>
+                  <span className="font-mono text-xs">{col.columnName}</span>
+                  <span className="text-xs text-gray-400">({col.dataType})</span>
                 </label>
               ))}
               {availableColumns.length === 0 && <p className="text-xs text-gray-400">Select a table first</p>}
@@ -109,7 +116,23 @@ export function EnrichConfig({ config, onUpdate }: EnrichConfigProps) {
         <p className="text-xs text-gray-400">Records from the data mart table will be added via UNION ALL. Column names must match.</p>
       )}
 
-      <Button onClick={handleSave} className="w-full">Save Configuration</Button>
+      <div className="flex gap-2">
+        <Button onClick={handleSave} className="flex-1">Save Configuration</Button>
+        {workflowId && nodeId && (
+          <Button variant="outline" onClick={() => setShowSqlPreview(true)}>Preview SQL</Button>
+        )}
+      </div>
+
+      {workflowId && nodeId && (
+        <SqlPreviewDialog
+          open={showSqlPreview}
+          onClose={() => setShowSqlPreview(false)}
+          workflowId={workflowId}
+          nodeId={nodeId}
+          nodeType="ENRICH"
+          config={currentConfig}
+        />
+      )}
     </div>
   );
 }

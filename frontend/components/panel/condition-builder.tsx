@@ -6,13 +6,19 @@ import { Trash2, PlusCircle } from 'lucide-react';
 
 const OPERATORS = ['=', '!=', '>', '<', '>=', '<=', 'LIKE', 'NOT LIKE', 'IN', 'NOT IN', 'BETWEEN', 'IS NULL', 'IS NOT NULL'];
 
+export interface ColumnInfo {
+  columnName: string;
+  dataType: string;
+}
+
 interface ConditionBuilderProps {
   conditions: Record<string, unknown>;
   onChange: (conditions: Record<string, unknown>) => void;
+  columns?: ColumnInfo[];
   depth?: number;
 }
 
-export function ConditionBuilder({ conditions, onChange, depth = 0 }: ConditionBuilderProps) {
+export function ConditionBuilder({ conditions, onChange, columns, depth = 0 }: ConditionBuilderProps) {
   const operation = String(conditions.operation || 'AND');
   const items = (conditions.conditions as Array<Record<string, unknown>>) || [];
 
@@ -60,6 +66,7 @@ export function ConditionBuilder({ conditions, onChange, depth = 0 }: ConditionB
             <ConditionBuilder
               conditions={item}
               onChange={(updated) => updateItem(index, updated)}
+              columns={columns}
               depth={depth + 1}
             />
           ) : (
@@ -67,6 +74,7 @@ export function ConditionBuilder({ conditions, onChange, depth = 0 }: ConditionB
               condition={item}
               onChange={(updated) => updateItem(index, updated)}
               onRemove={() => removeItem(index)}
+              columns={columns}
             />
           )}
         </div>
@@ -96,20 +104,36 @@ interface ConditionRowProps {
   condition: Record<string, unknown>;
   onChange: (condition: Record<string, unknown>) => void;
   onRemove: () => void;
+  columns?: ColumnInfo[];
 }
 
-function ConditionRow({ condition, onChange, onRemove }: ConditionRowProps) {
+function ConditionRow({ condition, onChange, onRemove, columns }: ConditionRowProps) {
   const operator = String(condition.operator || '=');
   const isNullOp = operator === 'IS NULL' || operator === 'IS NOT NULL';
 
   return (
     <div className="flex items-center gap-1.5">
-      <Input
-        value={String(condition.field || '')}
-        onChange={(e) => onChange({ ...condition, field: e.target.value })}
-        placeholder="field"
-        className="text-xs h-7 w-24"
-      />
+      {columns && columns.length > 0 ? (
+        <select
+          className="border rounded px-1.5 py-1 text-xs h-7 w-32"
+          value={String(condition.field || '')}
+          onChange={(e) => onChange({ ...condition, field: e.target.value })}
+        >
+          <option value="">Select field...</option>
+          {columns.map((col) => (
+            <option key={col.columnName} value={col.columnName}>
+              {col.columnName} ({col.dataType})
+            </option>
+          ))}
+        </select>
+      ) : (
+        <Input
+          value={String(condition.field || '')}
+          onChange={(e) => onChange({ ...condition, field: e.target.value })}
+          placeholder="field"
+          className="text-xs h-7 w-24"
+        />
+      )}
       <select
         className="border rounded px-1.5 py-1 text-xs h-7"
         value={operator}

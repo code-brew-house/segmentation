@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
-import type { DataMart } from '@/lib/types';
+import type { DataMart, DataMartColumn } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { ConditionBuilder } from './condition-builder';
+import { ConditionBuilder, type ColumnInfo } from './condition-builder';
+import { SqlPreviewDialog } from './sql-preview-dialog';
 
 interface FilterConfigProps {
   config: Record<string, unknown>;
@@ -15,7 +16,7 @@ interface FilterConfigProps {
   nodeId?: string;
 }
 
-export function FilterConfig({ config, onUpdate }: FilterConfigProps) {
+export function FilterConfig({ config, onUpdate, workflowId, nodeId }: FilterConfigProps) {
   const [dataMarts, setDataMarts] = useState<DataMart[]>([]);
   const [selectedTable, setSelectedTable] = useState(String(config.data_mart_table || ''));
   const [mode, setMode] = useState(String(config.mode || 'JOIN'));
@@ -23,19 +24,37 @@ export function FilterConfig({ config, onUpdate }: FilterConfigProps) {
   const [conditions, setConditions] = useState<Record<string, unknown>>(
     (config.conditions as Record<string, unknown>) || { operation: 'AND', conditions: [] }
   );
+  const [columns, setColumns] = useState<ColumnInfo[]>([]);
+  const [showSqlPreview, setShowSqlPreview] = useState(false);
 
   useEffect(() => {
     api.listDataMarts().then(setDataMarts).catch(console.error);
   }, []);
 
+  // Fetch columns when data mart table changes
+  useEffect(() => {
+    if (selectedTable) {
+      const dm = dataMarts.find((d) => d.tableName === selectedTable);
+      if (dm) {
+        api.getDataMart(dm.id).then((detail) => {
+          setColumns(detail.columns.map((c: DataMartColumn) => ({ columnName: c.columnName, dataType: c.dataType })));
+        }).catch(console.error);
+      }
+    } else {
+      setColumns([]);
+    }
+  }, [selectedTable, dataMarts]);
+
+  const currentConfig = {
+    ...config,
+    data_mart_table: selectedTable,
+    mode,
+    join_key: joinKey,
+    conditions,
+  };
+
   const handleSave = () => {
-    onUpdate({
-      ...config,
-      data_mart_table: selectedTable,
-      mode,
-      join_key: joinKey,
-      conditions,
-    });
+    onUpdate(currentConfig);
   };
 
   return (
@@ -72,10 +91,27 @@ export function FilterConfig({ config, onUpdate }: FilterConfigProps) {
         <ConditionBuilder
           conditions={conditions}
           onChange={setConditions}
+          columns={columns}
         />
       </div>
 
-      <Button onClick={handleSave} className="w-full">Save Configuration</Button>
+      <div className="flex gap-2">
+        <Button onClick={handleSave} className="flex-1">Save Configuration</Button>
+        {workflowId && nodeId && (
+          <Button variant="outline" onClick={() => setShowSqlPreview(true)}>Preview SQL</Button>
+        )}
+      </div>
+
+      {workflowId && nodeId && (
+        <SqlPreviewDialog
+          open={showSqlPreview}
+          onClose={() => setShowSqlPreview(false)}
+          workflowId={workflowId}
+          nodeId={nodeId}
+          nodeType="FILTER"
+          config={currentConfig}
+        />
+      )}
     </div>
   );
 }
