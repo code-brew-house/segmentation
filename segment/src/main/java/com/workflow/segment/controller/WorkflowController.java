@@ -2,6 +2,7 @@ package com.workflow.segment.controller;
 
 import com.workflow.segment.dto.*;
 import com.workflow.segment.service.ExecutionService;
+import com.workflow.segment.service.SqlPreviewService;
 import com.workflow.segment.service.WorkflowService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
@@ -19,6 +20,7 @@ import java.util.UUID;
 public class WorkflowController {
     private final WorkflowService workflowService;
     private final ExecutionService executionService;
+    private final SqlPreviewService sqlPreviewService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -73,5 +75,11 @@ public class WorkflowController {
     @PostMapping("/{id}/nodes/{nodeId}/preview")
     public Map<String, Object> previewNode(@PathVariable UUID id, @PathVariable UUID nodeId) {
         return executionService.previewNode(id, nodeId);
+    }
+
+    @PostMapping("/{id}/nodes/{nodeId}/sql-preview")
+    public SqlPreviewResponse sqlPreview(@PathVariable UUID id, @PathVariable UUID nodeId,
+                                          @RequestBody SqlPreviewRequest request) {
+        return sqlPreviewService.generatePreview(request.nodeType(), request.config());
     }
 }
