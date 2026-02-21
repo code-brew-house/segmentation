@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Loader2 } from 'lucide-react';
@@ -16,26 +16,22 @@ interface SqlPreviewDialogProps {
 
 export function SqlPreviewDialog({ open, onClose, workflowId, nodeId, nodeType, config }: SqlPreviewDialogProps) {
   const [sql, setSql] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchPreview = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await api.sqlPreview(workflowId, nodeId, { nodeType, config });
-      setSql(result.sql);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate SQL preview');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Derived: loading when dialog is open but no result or error yet
+  const loading = open && sql === null && error === null;
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    api.sqlPreview(workflowId, nodeId, { nodeType, config })
+      .then((result) => { if (!cancelled) setSql(result.sql); })
+      .catch((err) => { if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to generate SQL preview'); });
+    return () => { cancelled = true; };
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleOpenChange = (isOpen: boolean) => {
-    if (isOpen) {
-      fetchPreview();
-    } else {
+    if (!isOpen) {
       setSql(null);
       setError(null);
       onClose();
