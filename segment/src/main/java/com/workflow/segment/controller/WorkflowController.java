@@ -1,6 +1,7 @@
 package com.workflow.segment.controller;
 
 import com.workflow.segment.dto.*;
+import com.workflow.segment.service.ExecutionService;
 import com.workflow.segment.service.WorkflowService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -13,6 +14,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class WorkflowController {
     private final WorkflowService workflowService;
+    private final ExecutionService executionService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -29,4 +31,14 @@ public class WorkflowController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable UUID id) { workflowService.deleteWorkflow(id); }
+
+    @GetMapping("/{id}/executions")
+    public List<ExecutionResponse> listExecutions(@PathVariable UUID id) {
+        return executionService.listExecutions(id);
+    }
+
+    @GetMapping("/{id}/executions/{execId}")
+    public ExecutionDetailResponse getExecution(@PathVariable UUID id, @PathVariable UUID execId) {
+        return executionService.getExecution(execId);
+    }
 }
