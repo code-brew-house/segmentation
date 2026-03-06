@@ -55,7 +55,8 @@ public class PreviewWorkflowImpl implements PreviewWorkflow {
                 var r = activities.filterActivity(new FilterInput(
                         input.getSourceTable(), targetTable,
                         (String) config.get("data_mart_table"), (String) config.get("join_key"),
-                        (String) config.get("mode"), (Map<String, Object>) config.get("conditions")));
+                        (String) config.get("mode"), (Map<String, Object>) config.get("conditions"),
+                        !Boolean.FALSE.equals(config.get("distinct"))));
                 previewResult = new PreviewResult(r.getResultTable(), r.getInputCount(), r.getOutputCount(), r.getFilteredCount());
                 nodeResult = new NodeResult(input.getNodeId(), input.getNodeType(),
                         r.getResultTable(), r.getInputCount(), r.getOutputCount(), r.getFilteredCount(), "SUCCESS", null, null);

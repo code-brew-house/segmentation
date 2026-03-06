@@ -1,0 +1,21 @@
+alert_id,customer_id,transaction_id,alert_type,severity,alert_timestamp,fraud_score,status,resolved_at,notes
+4001,1,61,LARGE_TRANSACTION,HIGH,2024-12-01 10:05:00,0.8720,CONFIRMED_FRAUD,2024-12-02 09:00:00,Wire transfer to unrecognized overseas entity. Customer confirmed fraud.
+4002,6,17,VELOCITY,MEDIUM,2024-10-17 07:50:00,0.5430,FALSE_POSITIVE,2024-10-17 14:00:00,Multiple small purchases at gas station. Customer travel confirmed.
+4003,10,,UNUSUAL_LOCATION,HIGH,2024-11-05 03:22:00,0.9100,CONFIRMED_FRAUD,2024-11-06 10:00:00,Card used in foreign country while customer was in US.
+4004,2,5,CARD_NOT_PRESENT,LOW,2024-10-05 08:25:00,0.2300,FALSE_POSITIVE,2024-10-05 11:00:00,Online purchase flagged due to new merchant. Customer verified.
+4005,9,63,UNUSUAL_LOCATION,CRITICAL,2024-12-03 02:18:00,0.9560,UNDER_REVIEW,,ATM withdrawal at 2am in unfamiliar location. Account temporarily frozen.
+4006,22,,VELOCITY,HIGH,2024-11-12 15:40:00,0.8100,CONFIRMED_FRAUD,2024-11-13 08:00:00,Multiple rapid transactions in short window. Card cloned.
+4007,14,34,LARGE_TRANSACTION,MEDIUM,2024-11-04 08:35:00,0.4820,FALSE_POSITIVE,2024-11-04 13:00:00,Rent payment flagged as large. Customer confirmed payment.
+4008,17,,CARD_NOT_PRESENT,HIGH,2024-12-08 22:15:00,0.8900,OPEN,,Card not present transaction on inactive merchant category.
+4009,32,,UNUSUAL_LOCATION,CRITICAL,2024-11-20 04:05:00,0.9780,CONFIRMED_FRAUD,2024-11-21 09:30:00,Fraudulent card usage overseas. Card cancelled and replaced.
+4010,3,9,LARGE_TRANSACTION,LOW,2024-10-08 11:35:00,0.1800,FALSE_POSITIVE,2024-10-08 15:00:00,Mortgage payment flagged. Regular recurring payment confirmed.
+4011,26,,VELOCITY,HIGH,2024-12-10 11:00:00,0.8650,UNDER_REVIEW,,Seven transactions in 20 minutes across different merchants.
+4012,4,12,CARD_NOT_PRESENT,MEDIUM,2024-10-12 09:05:00,0.4100,FALSE_POSITIVE,2024-10-12 16:00:00,Online insurance payment flagged. Customer confirmed.
+4013,46,,UNUSUAL_LOCATION,HIGH,2024-12-15 19:30:00,0.8320,OPEN,,Transaction originating from high-risk IP address.
+4014,8,21,LARGE_TRANSACTION,LOW,2024-10-21 12:35:00,0.2100,FALSE_POSITIVE,2024-10-21 17:00:00,Amazon purchase within normal spending pattern.
+4015,15,26,VELOCITY,MEDIUM,2024-10-26 14:05:00,0.5800,FALSE_POSITIVE,2024-10-27 10:00:00,Multiple savings deposits in one day. Customer confirmed salary splits.
+4016,50,,CARD_NOT_PRESENT,CRITICAL,2024-12-18 01:45:00,0.9400,OPEN,,Unauthorized international CNP transaction while card reported lost.
+4017,7,11,UNUSUAL_LOCATION,LOW,2024-10-11 18:05:00,0.1500,FALSE_POSITIVE,2024-10-11 21:00:00,Dinner in unfamiliar restaurant. Customer confirmed travel.
+4018,40,,LARGE_TRANSACTION,HIGH,2024-12-20 13:20:00,0.8500,UNDER_REVIEW,,Single debit 10x larger than customer 90-day average.
+4019,19,29,VELOCITY,LOW,2024-10-29 11:05:00,0.2900,FALSE_POSITIVE,2024-10-29 16:00:00,Recurring monthly payments batch. Normal pattern confirmed.
+4020,38,,UNUSUAL_LOCATION,MEDIUM,2024-12-22 08:00:00,0.6200,OPEN,,Account access from new device in different city.

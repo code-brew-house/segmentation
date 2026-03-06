@@ -16,4 +16,5 @@ public class FilterInput {
     private String joinKey;
     private String mode; // "JOIN" or "SUBQUERY"
     private Map<String, Object> conditions; // recursive AND/OR structure
+    private boolean distinct; // deduplicate rows in JOIN mode
 }

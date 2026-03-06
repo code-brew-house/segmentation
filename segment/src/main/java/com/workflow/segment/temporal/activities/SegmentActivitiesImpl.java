@@ -94,9 +94,10 @@ public class SegmentActivitiesImpl implements SegmentActivities {
         String whereClause = SqlConditionBuilder.buildWhereClause(input.getConditions());
 
         if ("JOIN".equalsIgnoreCase(input.getMode())) {
+            String selectClause = input.isDistinct() ? "SELECT DISTINCT src.*" : "SELECT src.*";
             String sql = String.format(
-                    "CREATE TABLE %s AS SELECT src.* FROM %s src JOIN %s dm ON src.%s::text = dm.%s::text %s",
-                    target, source, dmTable, input.getJoinKey(), input.getJoinKey(),
+                    "CREATE TABLE %s AS %s FROM %s src JOIN %s dm ON src.%s::text = dm.%s::text %s",
+                    target, selectClause, source, dmTable, input.getJoinKey(), input.getJoinKey(),
                     whereClause);
             jdbcTemplate.execute(sql);
         } else {
@@ -128,9 +129,10 @@ public class SegmentActivitiesImpl implements SegmentActivities {
             String dmCols = input.getSelectColumns() != null && !input.getSelectColumns().isEmpty()
                     ? input.getSelectColumns().stream().map(c -> "dm." + c).collect(Collectors.joining(", "))
                     : "dm.*";
+            String joinKey = input.getJoinKey();
             String sql = String.format(
-                    "CREATE TABLE %s AS SELECT src.*, %s FROM %s src LEFT JOIN %s dm ON src.%s::text = dm.%s::text",
-                    target, dmCols, source, dmTable, input.getJoinKey(), input.getJoinKey());
+                    "CREATE TABLE %s AS SELECT src.*, %s FROM %s src LEFT JOIN (SELECT DISTINCT ON (%s) * FROM %s ORDER BY %s) dm ON src.%s::text = dm.%s::text",
+                    target, dmCols, source, joinKey, dmTable, joinKey, joinKey, joinKey);
             jdbcTemplate.execute(sql);
         } else {
             // ADD_RECORDS mode - UNION ALL

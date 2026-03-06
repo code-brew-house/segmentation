@@ -24,6 +24,7 @@ export function FilterConfig({ config, onUpdate, workflowId, nodeId }: FilterCon
   const [conditions, setConditions] = useState<Record<string, unknown>>(
     (config.conditions as Record<string, unknown>) || { operation: 'AND', conditions: [] }
   );
+  const [distinct, setDistinct] = useState<boolean>(config.distinct !== false);
   const [columns, setColumns] = useState<ColumnInfo[]>([]);
   const [showSqlPreview, setShowSqlPreview] = useState(false);
 
@@ -51,6 +52,7 @@ export function FilterConfig({ config, onUpdate, workflowId, nodeId }: FilterCon
     mode,
     join_key: joinKey,
     conditions,
+    distinct,
   };
 
   const handleSave = () => {
@@ -79,6 +81,17 @@ export function FilterConfig({ config, onUpdate, workflowId, nodeId }: FilterCon
           <Button variant={mode === 'JOIN' ? 'default' : 'outline'} size="sm" onClick={() => setMode('JOIN')}>JOIN</Button>
           <Button variant={mode === 'SUBQUERY' ? 'default' : 'outline'} size="sm" onClick={() => setMode('SUBQUERY')}>Subquery</Button>
         </div>
+        {mode === 'JOIN' && (
+          <label className="flex items-center gap-2 mt-2 text-sm text-gray-600 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={distinct}
+              onChange={(e) => setDistinct(e.target.checked)}
+              className="rounded"
+            />
+            Deduplicate rows (DISTINCT)
+          </label>
+        )}
       </div>
 
       <div>

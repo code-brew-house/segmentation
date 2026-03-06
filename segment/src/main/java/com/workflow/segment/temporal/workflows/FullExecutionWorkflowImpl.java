@@ -187,7 +187,8 @@ public class FullExecutionWorkflowImpl implements FullExecutionWorkflow {
                     var r = activities.filterActivity(new FilterInput(
                             sourceTable, targetTable,
                             (String) config.get("data_mart_table"), (String) config.get("join_key"),
-                            (String) config.get("mode"), (Map<String, Object>) config.get("conditions")));
+                            (String) config.get("mode"), (Map<String, Object>) config.get("conditions"),
+                            !Boolean.FALSE.equals(config.get("distinct"))));
                     yield new NodeResult(node.getNodeId(), node.getType(), r.getResultTable(),
                             r.getInputCount(), r.getOutputCount(), r.getFilteredCount(), "SUCCESS", null, null);
                 }

@@ -1,0 +1,11 @@
+branch_id,branch_name,branch_type,address,city,state,zip_code,phone,manager_id,atm_count,opened_date,status
+1,Manhattan Wall Street,FLAGSHIP,100 Wall Street,New York,NY,10005,212-555-0101,101,4,2005-03-15,ACTIVE
+2,Brooklyn Heights,FULL_SERVICE,350 Atlantic Ave,Brooklyn,NY,11217,718-555-0102,102,2,2008-07-20,ACTIVE
+3,Downtown Los Angeles,FULL_SERVICE,633 W 5th Street,Los Angeles,CA,90071,213-555-0103,103,3,2010-11-01,ACTIVE
+4,Chicago Loop,FLAGSHIP,190 S LaSalle St,Chicago,IL,60603,312-555-0104,104,5,2003-06-10,ACTIVE
+5,Houston Energy Corridor,FULL_SERVICE,1200 Enclave Pkwy,Houston,TX,77077,713-555-0105,105,2,2012-04-22,ACTIVE
+6,Phoenix Desert Ridge,FULL_SERVICE,21001 N Tatum Blvd,Phoenix,AZ,85050,480-555-0106,106,2,2015-09-14,ACTIVE
+7,Philadelphia Center City,FULL_SERVICE,1500 Market St,Philadelphia,PA,19102,215-555-0107,107,3,2007-02-28,ACTIVE
+8,San Antonio Riverwalk,LIMITED_SERVICE,200 Commerce St,San Antonio,TX,78205,210-555-0108,108,1,2018-01-15,ACTIVE
+9,Seattle Capitol Hill,FULL_SERVICE,400 Broadway Ave E,Seattle,WA,98102,206-555-0109,109,2,2011-08-30,ACTIVE
+10,Miami Brickell,FULL_SERVICE,1221 Brickell Ave,Miami,FL,33131,305-555-0110,110,3,2009-05-05,ACTIVE

@@ -72,6 +72,7 @@ export default function HistoryDetailPage({ params }: { params: Promise<{ execut
 
   const [workflow, setWorkflow] = useState<WorkflowDetail | null>(null);
   const [execution, setExecution] = useState<ExecutionDetail | null>(null);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedNodeResult, setSelectedNodeResult] = useState<NodeExecutionResult | null>(null);
   const [resultRows, setResultRows] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
@@ -90,9 +91,10 @@ export default function HistoryDetailPage({ params }: { params: Promise<{ execut
 
   const handleNodeClick = useCallback(async (_: React.MouseEvent, node: Node) => {
     if (!execution || !workflowId) return;
-    const nr = execution.nodeResults.find((r) => r.nodeId === node.id);
-    setSelectedNodeResult(nr || null);
-    if (nr && nr.status === 'SUCCESS') {
+    setSelectedNodeId(node.id);
+    const nr = execution.nodeResults.find((r) => r.nodeId === node.id) ?? null;
+    setSelectedNodeResult(nr);
+    if (nr?.status === 'SUCCESS') {
       try {
         const rows = await api.getNodeResults(workflowId, executionId, nr.nodeId);
         setResultRows(rows);
@@ -182,77 +184,81 @@ export default function HistoryDetailPage({ params }: { params: Promise<{ execut
         </div>
 
         {/* Node detail panel */}
-        {selectedNodeResult && (
-          <div className="w-[350px] border-l bg-white overflow-y-auto p-4">
-            <h3 className="font-semibold text-sm mb-3">Node Details</h3>
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Node ID</span>
-                <span className="font-mono text-xs">{selectedNodeResult.nodeId.slice(0, 8)}...</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Type</span>
-                <span>{selectedNodeResult.nodeType}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Status</span>
-                <Badge className={statusColors[selectedNodeResult.status]} variant="secondary">
-                  {selectedNodeResult.status}
-                </Badge>
-              </div>
-              {selectedNodeResult.inputRecordCount != null && (
+        {selectedNodeId && (() => {
+          const nodeInfo = workflow.nodes.find((n) => n.id === selectedNodeId);
+          const status = selectedNodeResult?.status ?? 'NOT STARTED';
+          return (
+            <div className="w-[350px] border-l bg-white overflow-y-auto p-4">
+              <h3 className="font-semibold text-sm mb-3">Node Details</h3>
+              <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Input Records</span>
-                  <span>{selectedNodeResult.inputRecordCount.toLocaleString()}</span>
+                  <span className="text-gray-500">Node ID</span>
+                  <span className="font-mono text-xs">{selectedNodeId.slice(0, 8)}...</span>
                 </div>
-              )}
-              {selectedNodeResult.filteredRecordCount != null && (
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Filtered Records</span>
-                  <span>{selectedNodeResult.filteredRecordCount.toLocaleString()}</span>
+                  <span className="text-gray-500">Type</span>
+                  <span>{selectedNodeResult?.nodeType ?? nodeInfo?.type ?? '—'}</span>
                 </div>
-              )}
-              {selectedNodeResult.outputRecordCount != null && (
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Output Records</span>
-                  <span>{selectedNodeResult.outputRecordCount.toLocaleString()}</span>
+                  <span className="text-gray-500">Status</span>
+                  <Badge className={statusColors[status] ?? 'bg-gray-100 text-gray-700'} variant="secondary">
+                    {status}
+                  </Badge>
                 </div>
-              )}
-              {selectedNodeResult.errorMessage && (
-                <div className="mt-2 p-2 bg-red-50 rounded text-red-700 text-xs">
-                  {selectedNodeResult.errorMessage}
-                </div>
-              )}
+                {selectedNodeResult?.inputRecordCount != null && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Input Records</span>
+                    <span>{selectedNodeResult.inputRecordCount.toLocaleString()}</span>
+                  </div>
+                )}
+                {selectedNodeResult?.filteredRecordCount != null && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Filtered Records</span>
+                    <span>{selectedNodeResult.filteredRecordCount.toLocaleString()}</span>
+                  </div>
+                )}
+                {selectedNodeResult?.outputRecordCount != null && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Output Records</span>
+                    <span>{selectedNodeResult.outputRecordCount.toLocaleString()}</span>
+                  </div>
+                )}
+                {selectedNodeResult?.errorMessage && (
+                  <div className="mt-2 p-2 bg-red-50 rounded text-red-700 text-xs">
+                    {selectedNodeResult.errorMessage}
+                  </div>
+                )}
 
-              {/* Sample data */}
-              {resultRows.length > 0 && (
-                <div className="mt-4">
-                  <h4 className="font-medium text-xs mb-2">Sample Data ({resultRows.length} rows)</h4>
-                  <div className="overflow-auto max-h-[300px] border rounded">
-                    <table className="text-xs w-full">
-                      <thead className="bg-gray-50 sticky top-0">
-                        <tr>
-                          {Object.keys(resultRows[0]).map((key) => (
-                            <th key={key} className="px-2 py-1 text-left font-medium text-gray-600 whitespace-nowrap">{key}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {resultRows.slice(0, 20).map((row, i) => (
-                          <tr key={i} className="border-t">
-                            {Object.values(row).map((val, j) => (
-                              <td key={j} className="px-2 py-1 whitespace-nowrap">{val != null ? String(val) : ''}</td>
+                {/* Sample data */}
+                {resultRows.length > 0 && (
+                  <div className="mt-4">
+                    <h4 className="font-medium text-xs mb-2">Sample Data ({resultRows.length} rows)</h4>
+                    <div className="overflow-auto max-h-[300px] border rounded">
+                      <table className="text-xs w-full">
+                        <thead className="bg-gray-50 sticky top-0">
+                          <tr>
+                            {Object.keys(resultRows[0]).map((key) => (
+                              <th key={key} className="px-2 py-1 text-left font-medium text-gray-600 whitespace-nowrap">{key}</th>
                             ))}
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {resultRows.slice(0, 20).map((row, i) => (
+                            <tr key={i} className="border-t">
+                              {Object.values(row).map((val, j) => (
+                                <td key={j} className="px-2 py-1 whitespace-nowrap">{val != null ? String(val) : ''}</td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
       </div>
     </div>
   );
