@@ -13,4 +13,5 @@ public class FullExecutionInput {
     private String workflowId;
     private String executionId;
     private List<GraphNode> graph;
+    private List<GraphEdge> edges;
 }
