@@ -3,6 +3,7 @@ package com.workflow.segment.service;
 import com.workflow.segment.dto.*;
 import com.workflow.segment.model.*;
 import com.workflow.segment.repository.NodeExecutionResultRepository;
+import com.workflow.segment.repository.SegmentWorkflowEdgeRepository;
 import com.workflow.segment.repository.SegmentWorkflowNodeRepository;
 import com.workflow.segment.repository.SegmentWorkflowRepository;
 import com.workflow.segment.repository.WorkflowExecutionRepository;
@@ -32,6 +33,7 @@ public class ExecutionService {
     private final SegmentWorkflowRepository workflowRepository;
     private final SegmentWorkflowNodeRepository nodeRepository;
     private final NodeExecutionResultRepository nodeExecutionResultRepository;
+    private final SegmentWorkflowEdgeRepository edgeRepository;
     private final JdbcTemplate jdbcTemplate;
 
     @Autowired(required = false)
@@ -41,11 +43,13 @@ public class ExecutionService {
                             SegmentWorkflowRepository workflowRepository,
                             SegmentWorkflowNodeRepository nodeRepository,
                             NodeExecutionResultRepository nodeExecutionResultRepository,
+                            SegmentWorkflowEdgeRepository edgeRepository,
                             JdbcTemplate jdbcTemplate) {
         this.executionRepository = executionRepository;
         this.workflowRepository = workflowRepository;
         this.nodeRepository = nodeRepository;
         this.nodeExecutionResultRepository = nodeExecutionResultRepository;
+        this.edgeRepository = edgeRepository;
         this.jdbcTemplate = jdbcTemplate;
     }
 
@@ -99,15 +103,22 @@ public class ExecutionService {
         // Build graph input
         List<SegmentWorkflowNode> nodes = nodeRepository.findByWorkflowId(workflowId);
         List<GraphNode> graphNodes = nodes.stream().map(n -> new GraphNode(
-                n.getId().toString(), n.getType().name(),
-                n.getParentNodeIds() != null
-                        ? n.getParentNodeIds().stream().map(UUID::toString).toList()
-                        : List.of(),
-                n.getConfig()
+                n.getId().toString(), n.getType().name(), n.getConfig()
+        )).toList();
+
+        List<SegmentWorkflowEdge> edges = edgeRepository.findByWorkflowId(workflowId);
+        List<GraphEdge> graphEdges = edges.stream().map(e -> new GraphEdge(
+                e.getId().toString(),
+                e.getSourceNode().getId().toString(),
+                e.getTargetNode().getId().toString(),
+                e.getName(),
+                e.getCondition(),
+                e.isDefault(),
+                e.getSortOrder() != null ? e.getSortOrder() : 0
         )).toList();
 
         FullExecutionInput input = new FullExecutionInput(
-                workflowId.toString(), execution.getId().toString(), graphNodes);
+                workflowId.toString(), execution.getId().toString(), graphNodes, graphEdges);
 
         // Start Temporal workflow async (null in test profile)
         if (workflowClient != null) {
@@ -182,9 +193,12 @@ public class ExecutionService {
 
         // Resolve source table from parent node's previous execution
         String sourceTable = null;
-        if (node.getParentNodeIds() != null && !node.getParentNodeIds().isEmpty()) {
-            UUID parentNodeId = node.getParentNodeIds().get(0);
-            // Look for the most recent successful execution result for the parent node
+        List<SegmentWorkflowEdge> incomingEdges = edgeRepository
+                .findBySourceNodeIdOrTargetNodeId(nodeId, nodeId).stream()
+                .filter(e -> e.getTargetNode().getId().equals(nodeId))
+                .toList();
+        if (!incomingEdges.isEmpty()) {
+            UUID parentNodeId = incomingEdges.get(0).getSourceNode().getId();
             Optional<NodeExecutionResult> parentResult = nodeExecutionResultRepository
                     .findTopByNodeIdAndStatusOrderByStartedAtDesc(parentNodeId, ExecutionStatus.SUCCESS);
             if (parentResult.isPresent()) {
