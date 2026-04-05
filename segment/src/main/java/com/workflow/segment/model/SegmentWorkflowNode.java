@@ -7,8 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
-import java.util.ArrayList;
-import java.util.List;
+
 import java.util.Map;
 import java.util.UUID;
 
@@ -29,14 +28,7 @@ public class SegmentWorkflowNode {
     @Column(nullable = false)
     private NodeType type;
 
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "node_parent_ids", joinColumns = @JoinColumn(name = "node_id"))
-    @Column(name = "parent_node_id")
-    private List<UUID> parentNodeIds = new ArrayList<>();
-
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "text")
     private Map<String, Object> config;
-
-    private Integer position;
 }

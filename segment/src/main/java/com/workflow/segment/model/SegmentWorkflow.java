@@ -32,4 +32,7 @@ public class SegmentWorkflow {
 
     @OneToMany(mappedBy = "workflow", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SegmentWorkflowNode> nodes = new ArrayList<>();
+
+    @OneToMany(mappedBy = "workflow", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<SegmentWorkflowEdge> edges = new ArrayList<>();
 }
