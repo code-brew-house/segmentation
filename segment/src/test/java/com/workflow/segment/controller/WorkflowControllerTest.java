@@ -43,7 +43,8 @@ class WorkflowControllerTest {
                 .content(objectMapper.writeValueAsString(new CreateWorkflowRequest("Get Test", "tester")))).andReturn();
         String id = objectMapper.readTree(result.getResponse().getContentAsString()).get("id").asText();
         mockMvc.perform(get("/api/workflows/" + id)).andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Get Test")).andExpect(jsonPath("$.nodes").isArray());
+                .andExpect(jsonPath("$.name").value("Get Test")).andExpect(jsonPath("$.nodes").isArray())
+                .andExpect(jsonPath("$.edges").isArray());
     }
 
     @Test

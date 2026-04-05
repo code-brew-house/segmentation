@@ -82,7 +82,7 @@ class SegmentActivitiesImplTest {
                 "operation", "AND",
                 "conditions", List.of(Map.of("field", "dm.amount", "operator", ">", "value", "300")));
         var result = activities.filterActivity(new FilterInput(
-                "test_source", "test_filter_join", "dm_purchases", "customer_id", "JOIN", conditions));
+                "test_source", "test_filter_join", "dm_purchases", "customer_id", "JOIN", conditions, false));
         assertThat(result.getResultTable()).isEqualTo("test_filter_join");
         assertThat(result.getOutputCount()).isEqualTo(2); // Alice(500) and Charlie(800)
         assertThat(result.getInputCount()).isEqualTo(4);
@@ -95,7 +95,7 @@ class SegmentActivitiesImplTest {
                 "operation", "AND",
                 "conditions", List.of(Map.of("field", "amount", "operator", ">", "value", "300")));
         var result = activities.filterActivity(new FilterInput(
-                "test_source", "test_filter_sub", "dm_purchases", "customer_id", "SUBQUERY", conditions));
+                "test_source", "test_filter_sub", "dm_purchases", "customer_id", "SUBQUERY", conditions, false));
         assertThat(result.getOutputCount()).isEqualTo(2); // customers 1 and 3
     }
 

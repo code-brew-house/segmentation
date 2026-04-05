@@ -12,7 +12,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import java.util.List;
 import java.util.Map;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -35,7 +34,7 @@ class NodeControllerTest {
     @Test
     void shouldAddStartNode() throws Exception {
         mockMvc.perform(post("/api/workflows/" + workflowId + "/nodes").contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new AddNodeRequest(List.of(), "START_FILE_UPLOAD", Map.of("file_path", "/data/customers.csv"), null))))
+                        .content(objectMapper.writeValueAsString(new AddNodeRequest("START_FILE_UPLOAD", Map.of("file_path", "/data/customers.csv")))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").exists())
                 .andExpect(jsonPath("$.type").value("START_FILE_UPLOAD"));
@@ -43,25 +42,23 @@ class NodeControllerTest {
 
     @Test
     void shouldAddFilterNodeWithParent() throws Exception {
-        var startResult = mockMvc.perform(post("/api/workflows/" + workflowId + "/nodes").contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(new AddNodeRequest(List.of(), "START_FILE_UPLOAD", Map.of("file_path", "/data/customers.csv"), null)))).andReturn();
-        String startNodeId = objectMapper.readTree(startResult.getResponse().getContentAsString()).get("id").asText();
+        mockMvc.perform(post("/api/workflows/" + workflowId + "/nodes").contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(new AddNodeRequest("START_FILE_UPLOAD", Map.of("file_path", "/data/customers.csv"))))).andReturn();
 
         mockMvc.perform(post("/api/workflows/" + workflowId + "/nodes").contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new AddNodeRequest(List.of(startNodeId), "FILTER", Map.of("data_mart_table", "purchases", "mode", "JOIN"), null))))
+                        .content(objectMapper.writeValueAsString(new AddNodeRequest("FILTER", Map.of("data_mart_table", "purchases", "mode", "JOIN")))))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.type").value("FILTER"))
-                .andExpect(jsonPath("$.parentNodeIds[0]").value(startNodeId));
+                .andExpect(jsonPath("$.type").value("FILTER"));
     }
 
     @Test
     void shouldUpdateNodeConfig() throws Exception {
         var result = mockMvc.perform(post("/api/workflows/" + workflowId + "/nodes").contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(new AddNodeRequest(List.of(), "START_QUERY", Map.of("raw_sql", "SELECT * FROM customers"), null)))).andReturn();
+                .content(objectMapper.writeValueAsString(new AddNodeRequest("START_QUERY", Map.of("raw_sql", "SELECT * FROM customers"))))).andReturn();
         String nodeId = objectMapper.readTree(result.getResponse().getContentAsString()).get("id").asText();
 
         mockMvc.perform(put("/api/workflows/" + workflowId + "/nodes/" + nodeId).contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new UpdateNodeRequest(null, Map.of("raw_sql", "SELECT * FROM customers WHERE active = true")))))
+                        .content(objectMapper.writeValueAsString(new UpdateNodeRequest(Map.of("raw_sql", "SELECT * FROM customers WHERE active = true")))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.config.raw_sql").value("SELECT * FROM customers WHERE active = true"));
     }
@@ -69,7 +66,7 @@ class NodeControllerTest {
     @Test
     void shouldDeleteNode() throws Exception {
         var result = mockMvc.perform(post("/api/workflows/" + workflowId + "/nodes").contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(new AddNodeRequest(List.of(), "START_FILE_UPLOAD", Map.of("file_path", "/data/test.csv"), null)))).andReturn();
+                .content(objectMapper.writeValueAsString(new AddNodeRequest("START_FILE_UPLOAD", Map.of("file_path", "/data/test.csv"))))).andReturn();
         String nodeId = objectMapper.readTree(result.getResponse().getContentAsString()).get("id").asText();
         mockMvc.perform(delete("/api/workflows/" + workflowId + "/nodes/" + nodeId)).andExpect(status().isNoContent());
     }
