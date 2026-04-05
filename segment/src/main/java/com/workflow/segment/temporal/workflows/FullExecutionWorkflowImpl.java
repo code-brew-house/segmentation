@@ -28,34 +28,37 @@ public class FullExecutionWorkflowImpl implements FullExecutionWorkflow {
     @Override
     public FullExecutionResult execute(FullExecutionInput input) {
         List<GraphNode> graph = input.getGraph();
-        // Use first 8 chars of each UUID to keep table names within PostgreSQL's 63-char limit
+        List<GraphEdge> edges = input.getEdges() != null ? input.getEdges() : List.of();
+
         String wfId = input.getWorkflowId().replace("-", "").substring(0, 8);
         String execId = input.getExecutionId().replace("-", "").substring(0, 8);
 
         // Build lookup maps
         Map<String, GraphNode> nodeMap = graph.stream()
                 .collect(Collectors.toMap(GraphNode::getNodeId, n -> n));
-        Map<String, List<String>> childrenMap = new HashMap<>();
-        for (GraphNode node : graph) {
-            if (node.getParentIds() != null) {
-                for (String parentId : node.getParentIds()) {
-                    childrenMap.computeIfAbsent(parentId, k -> new ArrayList<>()).add(node.getNodeId());
-                }
-            }
+
+        // Build edge maps
+        Map<String, List<GraphEdge>> outgoingEdges = new HashMap<>();
+        Map<String, List<GraphEdge>> incomingEdges = new HashMap<>();
+        for (GraphEdge edge : edges) {
+            outgoingEdges.computeIfAbsent(edge.getSourceNodeId(), k -> new ArrayList<>()).add(edge);
+            incomingEdges.computeIfAbsent(edge.getTargetNodeId(), k -> new ArrayList<>()).add(edge);
         }
+        // Sort outgoing edges by sortOrder for deterministic SPLIT evaluation
+        outgoingEdges.values().forEach(list -> list.sort(Comparator.comparingInt(GraphEdge::getSortOrder)));
 
         // Track results and promises
         Map<String, Promise<NodeResult>> promiseMap = new HashMap<>();
         List<NodeResult> allResults = Collections.synchronizedList(new ArrayList<>());
 
-        // Find root nodes (no parents)
+        // Find root nodes (no incoming edges)
         List<GraphNode> roots = graph.stream()
-                .filter(n -> n.getParentIds() == null || n.getParentIds().isEmpty())
+                .filter(n -> !incomingEdges.containsKey(n.getNodeId()))
                 .toList();
 
         // Execute each root and its subtree
         for (GraphNode root : roots) {
-            executeNode(root, nodeMap, childrenMap, promiseMap, allResults, wfId, execId);
+            executeNode(root, nodeMap, outgoingEdges, incomingEdges, promiseMap, allResults, wfId, execId);
         }
 
         // Wait for all promises to complete
@@ -64,64 +67,66 @@ public class FullExecutionWorkflowImpl implements FullExecutionWorkflow {
             Promise.allOf(allPromises).get();
         }
 
-        // Determine overall status
         boolean anyFailed = allResults.stream().anyMatch(r -> "FAILED".equals(r.getStatus()));
         String finalStatus = anyFailed ? "FAILED" : "SUCCESS";
 
-        // Persist all results and update execution status in the DB
         activities.completeExecution(input.getExecutionId(), allResults, finalStatus);
 
         return new FullExecutionResult(finalStatus, allResults);
     }
 
     private void executeNode(GraphNode node, Map<String, GraphNode> nodeMap,
-                             Map<String, List<String>> childrenMap,
+                             Map<String, List<GraphEdge>> outgoingEdges,
+                             Map<String, List<GraphEdge>> incomingEdges,
                              Map<String, Promise<NodeResult>> promiseMap,
                              List<NodeResult> allResults,
                              String wfId, String execId) {
-        if (promiseMap.containsKey(node.getNodeId())) return; // Already scheduled
+        if (promiseMap.containsKey(node.getNodeId())) return;
 
         String nodeType = node.getType();
 
-        // SPLIT and JOIN are structural -- no execution needed
         if ("SPLIT".equals(nodeType) || "JOIN".equals(nodeType)) {
             Promise<NodeResult> structuralPromise;
 
             if ("JOIN".equals(nodeType)) {
-                // Wait for all parents
-                List<Promise<NodeResult>> parentPromises = node.getParentIds().stream()
-                        .map(pid -> {
-                            if (!promiseMap.containsKey(pid)) {
-                                executeNode(nodeMap.get(pid), nodeMap, childrenMap, promiseMap, allResults, wfId, execId);
+                List<GraphEdge> incoming = incomingEdges.getOrDefault(node.getNodeId(), List.of());
+                List<Promise<NodeResult>> parentPromises = incoming.stream()
+                        .map(edge -> {
+                            if (!promiseMap.containsKey(edge.getSourceNodeId())) {
+                                executeNode(nodeMap.get(edge.getSourceNodeId()), nodeMap,
+                                        outgoingEdges, incomingEdges, promiseMap, allResults, wfId, execId);
                             }
-                            return promiseMap.get(pid);
+                            return promiseMap.get(edge.getSourceNodeId());
                         })
                         .toList();
 
-                // Use first parent's result table so downstream nodes (e.g. STOP) have a table to work with
                 Promise<NodeResult> firstParentPromise = parentPromises.get(0);
                 structuralPromise = Promise.allOf(parentPromises).thenApply(v -> {
                     String resultTable = firstParentPromise.get().getResultTable();
-                    NodeResult nr = new NodeResult(node.getNodeId(), nodeType, resultTable, 0, 0, 0, "SUCCESS", null, null);
+                    NodeResult nr = new NodeResult(node.getNodeId(), nodeType, resultTable,
+                            0, 0, 0, "SUCCESS", null, null);
                     allResults.add(nr);
                     return nr;
                 });
             } else {
-                // SPLIT: just a passthrough
-                if (node.getParentIds() != null && !node.getParentIds().isEmpty()) {
-                    String parentId = node.getParentIds().get(0);
+                // SPLIT: passthrough — condition evaluation happens when scheduling children
+                List<GraphEdge> incoming = incomingEdges.getOrDefault(node.getNodeId(), List.of());
+                if (!incoming.isEmpty()) {
+                    String parentId = incoming.get(0).getSourceNodeId();
                     if (!promiseMap.containsKey(parentId)) {
-                        executeNode(nodeMap.get(parentId), nodeMap, childrenMap, promiseMap, allResults, wfId, execId);
+                        executeNode(nodeMap.get(parentId), nodeMap, outgoingEdges, incomingEdges,
+                                promiseMap, allResults, wfId, execId);
                     }
                     structuralPromise = promiseMap.get(parentId).thenApply(parentResult -> {
-                        NodeResult nr = new NodeResult(node.getNodeId(), nodeType, parentResult.getResultTable(),
-                                0, 0, 0, "SUCCESS", null, null);
+                        NodeResult nr = new NodeResult(node.getNodeId(), nodeType,
+                                parentResult.getResultTable(), 0, 0, 0, "SUCCESS", null, null);
                         allResults.add(nr);
                         return nr;
                     });
                 } else {
                     structuralPromise = Async.function(() -> {
-                        NodeResult nr = new NodeResult(node.getNodeId(), nodeType, null, 0, 0, 0, "SUCCESS", null, null);
+                        NodeResult nr = new NodeResult(node.getNodeId(), nodeType, null,
+                                0, 0, 0, "SUCCESS", null, null);
                         allResults.add(nr);
                         return nr;
                     });
@@ -130,34 +135,44 @@ public class FullExecutionWorkflowImpl implements FullExecutionWorkflow {
 
             promiseMap.put(node.getNodeId(), structuralPromise);
 
-            // Schedule children
-            List<String> children = childrenMap.getOrDefault(node.getNodeId(), List.of());
-            for (String childId : children) {
-                executeNode(nodeMap.get(childId), nodeMap, childrenMap, promiseMap, allResults, wfId, execId);
+            // Schedule children via outgoing edges
+            List<GraphEdge> outgoing = outgoingEdges.getOrDefault(node.getNodeId(), List.of());
+            for (GraphEdge edge : outgoing) {
+                GraphNode child = nodeMap.get(edge.getTargetNodeId());
+                if (child != null) {
+                    executeNode(child, nodeMap, outgoingEdges, incomingEdges,
+                            promiseMap, allResults, wfId, execId);
+                }
             }
             return;
         }
 
-        // For data nodes: wait for parent, then execute
+        // Data nodes: wait for parent via incoming edge, then execute
         Promise<NodeResult> nodePromise;
-        if (node.getParentIds() != null && !node.getParentIds().isEmpty()) {
-            String parentId = node.getParentIds().get(0); // Data nodes have one parent
+        List<GraphEdge> incoming = incomingEdges.getOrDefault(node.getNodeId(), List.of());
+
+        if (!incoming.isEmpty()) {
+            String parentId = incoming.get(0).getSourceNodeId();
             if (!promiseMap.containsKey(parentId)) {
-                executeNode(nodeMap.get(parentId), nodeMap, childrenMap, promiseMap, allResults, wfId, execId);
+                executeNode(nodeMap.get(parentId), nodeMap, outgoingEdges, incomingEdges,
+                        promiseMap, allResults, wfId, execId);
             }
             nodePromise = promiseMap.get(parentId).thenApply(parentResult ->
                     executeDataNode(node, parentResult.getResultTable(), wfId, execId, allResults));
         } else {
-            // Root node -- no parent
             nodePromise = Async.function(() -> executeDataNode(node, null, wfId, execId, allResults));
         }
 
         promiseMap.put(node.getNodeId(), nodePromise);
 
-        // Schedule children
-        List<String> children = childrenMap.getOrDefault(node.getNodeId(), List.of());
-        for (String childId : children) {
-            executeNode(nodeMap.get(childId), nodeMap, childrenMap, promiseMap, allResults, wfId, execId);
+        // Schedule children via outgoing edges
+        List<GraphEdge> outgoing = outgoingEdges.getOrDefault(node.getNodeId(), List.of());
+        for (GraphEdge edge : outgoing) {
+            GraphNode child = nodeMap.get(edge.getTargetNodeId());
+            if (child != null) {
+                executeNode(child, nodeMap, outgoingEdges, incomingEdges,
+                        promiseMap, allResults, wfId, execId);
+            }
         }
     }
 
@@ -213,7 +228,8 @@ public class FullExecutionWorkflowImpl implements FullExecutionWorkflow {
                 default -> throw new RuntimeException("Unknown node type: " + node.getType());
             };
         } catch (Exception e) {
-            result = new NodeResult(node.getNodeId(), node.getType(), null, 0, 0, 0, "FAILED", e.getMessage(), null);
+            result = new NodeResult(node.getNodeId(), node.getType(), null,
+                    0, 0, 0, "FAILED", e.getMessage(), null);
         }
 
         allResults.add(result);
