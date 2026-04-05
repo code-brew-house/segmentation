@@ -5,11 +5,13 @@ import com.workflow.segment.model.*;
 import com.workflow.segment.repository.SegmentWorkflowEdgeRepository;
 import com.workflow.segment.repository.SegmentWorkflowRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class WorkflowService {
@@ -61,7 +63,8 @@ public class WorkflowService {
         // --- Upsert nodes ---
         List<SegmentWorkflowNode> existingNodes = new ArrayList<>(wf.getNodes());
         Set<UUID> incomingNodeIds = new HashSet<>();
-        Map<String, UUID> clientIdToUuid = new HashMap<>();
+        // Track new (non-UUID) client IDs in order for post-flush mapping
+        List<String> newClientIds = new ArrayList<>();
 
         for (SaveWorkflowRequest.SaveNodeRequest nodeReq : request.nodes()) {
             UUID nodeId = nodeReq.id() != null ? tryParseUuid(nodeReq.id()) : null;
@@ -75,17 +78,11 @@ public class WorkflowService {
                 node = new SegmentWorkflowNode();
                 node.setWorkflow(wf);
                 wf.getNodes().add(node);
+                newClientIds.add(nodeReq.id());
             }
 
             node.setType(NodeType.valueOf(nodeReq.type()));
             node.setConfig(nodeReq.config());
-
-            if (node.getId() == null) {
-                workflowRepository.saveAndFlush(wf);
-            }
-
-            clientIdToUuid.put(nodeReq.id() != null ? nodeReq.id() : node.getId().toString(),
-                    node.getId());
         }
 
         // Delete nodes not in incoming set
@@ -94,13 +91,28 @@ public class WorkflowService {
                 .toList();
         wf.getNodes().removeAll(nodesToRemove);
 
+        // Flush to persist new nodes and generate UUIDs
         workflowRepository.saveAndFlush(wf);
 
-        // Build node lookup for validation
+        // Build maps: existing UUID-based nodes are already mapped; new nodes need client ID mapping
+        Map<String, UUID> clientIdToUuid = new HashMap<>();
         Map<UUID, SegmentWorkflowNode> nodeMap = new HashMap<>();
+
+        // All persisted nodes get UUID-string mapping
         for (SegmentWorkflowNode n : wf.getNodes()) {
             nodeMap.put(n.getId(), n);
-            clientIdToUuid.putIfAbsent(n.getId().toString(), n.getId());
+            clientIdToUuid.put(n.getId().toString(), n.getId());
+        }
+
+        // Map new client IDs to the newly created nodes (those whose UUID is not in incomingNodeIds)
+        List<SegmentWorkflowNode> newPersistedNodes = wf.getNodes().stream()
+                .filter(n -> !incomingNodeIds.contains(n.getId()))
+                .toList();
+        for (int i = 0; i < newClientIds.size() && i < newPersistedNodes.size(); i++) {
+            String clientId = newClientIds.get(i);
+            if (clientId != null) {
+                clientIdToUuid.put(clientId, newPersistedNodes.get(i).getId());
+            }
         }
 
         // --- Validate edges ---
