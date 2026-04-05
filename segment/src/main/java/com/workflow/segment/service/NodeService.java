@@ -6,8 +6,7 @@ import com.workflow.segment.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.util.ArrayList;
-import java.util.List;
+
 import java.util.UUID;
 
 @Service
@@ -15,6 +14,7 @@ import java.util.UUID;
 public class NodeService {
     private final SegmentWorkflowRepository workflowRepository;
     private final SegmentWorkflowNodeRepository nodeRepository;
+    private final SegmentWorkflowEdgeRepository edgeRepository;
 
     @Transactional
     public NodeResponse addNode(UUID workflowId, AddNodeRequest request) {
@@ -23,10 +23,7 @@ public class NodeService {
         SegmentWorkflowNode node = new SegmentWorkflowNode();
         node.setWorkflow(wf);
         node.setType(NodeType.valueOf(request.type()));
-        node.setParentNodeIds(request.parentNodeIds() != null
-                ? new ArrayList<>(request.parentNodeIds().stream().map(UUID::fromString).toList()) : new ArrayList<>());
         node.setConfig(request.config());
-        node.setPosition(request.position());
         node = nodeRepository.save(node);
         return toResponse(node);
     }
@@ -35,9 +32,6 @@ public class NodeService {
     public NodeResponse updateNode(UUID workflowId, UUID nodeId, UpdateNodeRequest request) {
         SegmentWorkflowNode node = nodeRepository.findById(nodeId)
                 .orElseThrow(() -> new NodeNotFoundException(nodeId));
-        if (request.parentNodeIds() != null) {
-            node.setParentNodeIds(new ArrayList<>(request.parentNodeIds().stream().map(UUID::fromString).toList()));
-        }
         if (request.config() != null) {
             node.setConfig(request.config());
         }
@@ -47,20 +41,14 @@ public class NodeService {
 
     @Transactional
     public void deleteNode(UUID workflowId, UUID nodeId) {
-        deleteNodeAndDescendants(nodeId);
-    }
-
-    private void deleteNodeAndDescendants(UUID nodeId) {
-        List<SegmentWorkflowNode> allNodes = nodeRepository.findAll();
-        List<SegmentWorkflowNode> children = allNodes.stream()
-                .filter(n -> n.getParentNodeIds().contains(nodeId)).toList();
-        for (SegmentWorkflowNode child : children) {
-            deleteNodeAndDescendants(child.getId());
+        if (!nodeRepository.existsById(nodeId)) {
+            throw new NodeNotFoundException(nodeId);
         }
+        edgeRepository.deleteBySourceNodeIdOrTargetNodeId(nodeId, nodeId);
         nodeRepository.deleteById(nodeId);
     }
 
     private NodeResponse toResponse(SegmentWorkflowNode node) {
-        return new NodeResponse(node.getId(), node.getType(), node.getParentNodeIds(), node.getConfig(), node.getPosition());
+        return new NodeResponse(node.getId(), node.getType(), node.getConfig());
     }
 }
